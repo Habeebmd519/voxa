@@ -1,20 +1,25 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
+import 'package:voxa/core/network/genarate_defualt_profile_photo/get_gravatar_url.dart';
 import 'package:voxa/screens/main_screen.dart';
+import 'package:voxa/screens/screen_login.dart';
 
 class ExpandingScreenFromButton extends StatefulWidget {
   final Offset buttonOffset; // start button position
   final Size buttonSize; // start button size
-  final Offset endButtonOffset; // target button position (app bar)
-  final Size endButtonSize; // target button size
+  // final Offset endButtonOffset; // target button position (app bar)
+  // final Size endButtonSize; // target button size
+
+  final email;
 
   const ExpandingScreenFromButton({
     super.key,
     required this.buttonOffset,
     required this.buttonSize,
-    required this.endButtonOffset,
-    required this.endButtonSize,
+    required this.email,
+    // required this.endButtonOffset,
+    // required this.endButtonSize,
   });
 
   @override
@@ -26,22 +31,27 @@ class _ExpandingScreenFromButtonState extends State<ExpandingScreenFromButton>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _radiusAnimation;
-  late Animation<Offset> _centerAnimation;
+  late Animation<Offset> _forwardCenter;
+  late Animation<Offset> _reverseCenter;
 
   late Offset _startCenter;
   late Offset _endCenter;
   late double _maxRadius;
 
+  bool _showMainScreen = false;
+  bool _ready = false;
+
   @override
   void initState() {
     super.initState();
-
+    final gravatarUrl = getGravatarUrl(widget.email);
     _startCenter =
         widget.buttonOffset +
         Offset(widget.buttonSize.width / 2, widget.buttonSize.height / 2);
 
-    // Top-left corner (manual test)
-    _endCenter = Offset(40, 40);
+    // _endCenter =
+    //     widget.endButtonOffset +
+    //     Offset(widget.endButtonSize.width / 2, widget.endButtonSize.height / 2);
 
     _controller = AnimationController(
       vsync: this,
@@ -51,7 +61,17 @@ class _ExpandingScreenFromButtonState extends State<ExpandingScreenFromButton>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final size = MediaQuery.of(context).size;
 
-      // Compute max radius to cover entire screen
+      _forwardCenter = ConstantTween<Offset>(_startCenter).animate(_controller);
+
+      // Shrink toward top-left corner
+      _endCenter = const Offset(20, 50);
+
+      _reverseCenter = Tween<Offset>(
+        begin: _startCenter,
+        end: _endCenter,
+      ).animate(ReverseAnimation(_controller));
+
+      // Compute max radius
       final startDistances = [
         (_startCenter - Offset.zero).distance,
         (_startCenter - Offset(size.width, 0)).distance,
@@ -68,25 +88,24 @@ class _ExpandingScreenFromButtonState extends State<ExpandingScreenFromButton>
 
       _maxRadius = [...startDistances, ...endDistances].reduce(max);
 
-      // Radius animation: grows forward, shrinks reverse
-      _radiusAnimation = Tween<double>(begin: 0, end: _maxRadius).animate(
-        CurvedAnimation(
-          parent: _controller,
-          curve: Curves.easeOutCubic,
-          reverseCurve: Curves.easeInCubic,
-        ),
+      _radiusAnimation = CurvedAnimation(
+        parent: _controller,
+        curve: Curves.easeInOut,
+        reverseCurve: Curves.easeOut,
       );
 
-      // Center animation: forward fixed, reverse moves to top-left
-      _centerAnimation = Tween<Offset>(
-        begin: _startCenter,
-        end: _endCenter,
-      ).animate(_controller);
-
-      // Start expanding
+      setState(() => _ready = true); // Start expanding
       _controller.forward();
 
-      // Wait 6 seconds then shrink
+      // Show MainScreen after 5 seconds
+      Future.delayed(const Duration(seconds: 5), () {
+        if (!mounted) return;
+        setState(() {
+          _showMainScreen = true;
+        });
+      });
+
+      // Reverse after 6 seconds
       Future.delayed(const Duration(seconds: 6), () {
         if (!mounted) return;
         _controller.reverse();
@@ -98,7 +117,9 @@ class _ExpandingScreenFromButtonState extends State<ExpandingScreenFromButton>
       if (status == AnimationStatus.dismissed) {
         if (!mounted) return;
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const MainScreen()),
+          PageRouteBuilder(
+            pageBuilder: (_, __, ___) => MainScreen(profUrl: gravatarUrl),
+          ),
         );
       }
     });
@@ -112,47 +133,43 @@ class _ExpandingScreenFromButtonState extends State<ExpandingScreenFromButton>
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        final center = _centerAnimation.value;
-        final radius = _radiusAnimation.value;
+    if (!_ready) {
+      return const SizedBox.shrink(); // or loading screen
+    }
+    return Stack(
+      children: [
+        // MainScreen behind the animation
+        if (!_showMainScreen) AnimatedLoginScreen(),
+        if (_showMainScreen) MainScreen(),
 
-        return ClipOval(
-          clipper: CircleRevealClipper(center: center, radius: radius),
-          child: Container(
-            color: Colors.deepPurple,
-            child: Stack(
-              children: [
-                Center(
-                  child: Lottie.asset(
-                    'assets/hello.json',
-                    width: 300,
-                    height: 300,
-                    repeat: true,
-                  ),
-                ),
-                Positioned(
-                  top: 40,
-                  right: 20,
-                  child: IconButton(
-                    icon: const Icon(
-                      Icons.close,
-                      color: Colors.white,
-                      size: 28,
+        AnimatedBuilder(
+          animation: _controller,
+          builder: (context, child) {
+            final center = _controller.status == AnimationStatus.reverse
+                ? _reverseCenter.value
+                : _forwardCenter.value;
+            final radius = _radiusAnimation.value * _maxRadius;
+
+            return ClipOval(
+              clipper: CircleRevealClipper(center: center, radius: radius),
+              child: Container(
+                color: Color.fromARGB(255, 79, 127, 47),
+                child: Stack(
+                  children: [
+                    Center(
+                      child: Lottie.asset(
+                        'assets/hello.json',
+                        width: 300,
+                        height: 300,
+                      ),
                     ),
-                    onPressed: () {
-                      if (!mounted) return;
-                      _controller.stop();
-                      Navigator.of(context).pop();
-                    },
-                  ),
+                  ],
                 ),
-              ],
-            ),
-          ),
-        );
-      },
+              ),
+            );
+          },
+        ),
+      ],
     );
   }
 }
