@@ -44,7 +44,7 @@ class _ExpandingScreenFromButtonState extends State<ExpandingScreenFromButton>
   @override
   void initState() {
     super.initState();
-    final gravatarUrl = getGravatarUrl(widget.email);
+
     _startCenter =
         widget.buttonOffset +
         Offset(widget.buttonSize.width / 2, widget.buttonSize.height / 2);
@@ -117,9 +117,7 @@ class _ExpandingScreenFromButtonState extends State<ExpandingScreenFromButton>
       if (status == AnimationStatus.dismissed) {
         if (!mounted) return;
         Navigator.of(context).pushReplacement(
-          PageRouteBuilder(
-            pageBuilder: (_, __, ___) => MainScreen(profUrl: gravatarUrl),
-          ),
+          PageRouteBuilder(pageBuilder: (_, __, ___) => MainScreen()),
         );
       }
     });

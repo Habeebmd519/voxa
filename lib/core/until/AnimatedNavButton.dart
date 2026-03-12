@@ -160,6 +160,7 @@ class PremiumAnimatedButton extends StatelessWidget {
 
                 _showSnack(context, "Sign up success! UID: ${user?.uid}");
               }
+              _authService.saveFcmToken();
 
               // Navigate to Home / next screen after successful login/signup
               if (navigate) {
@@ -167,7 +168,7 @@ class PremiumAnimatedButton extends StatelessWidget {
                 final buttonOffset =
                     renderBox?.localToGlobal(Offset.zero) ?? Offset.zero;
                 final buttonSize = renderBox?.size ?? Size.zero;
-
+                FocusManager.instance.primaryFocus?.unfocus();
                 Navigator.of(context).push(
                   PageRouteBuilder(
                     pageBuilder: (_, __, ___) => ExpandingScreenFromButton(

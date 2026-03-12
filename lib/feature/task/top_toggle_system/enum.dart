@@ -1,1 +1,1 @@
-enum TopMode { normal, search, addPreparing, add, closingAdd }
+enum TopMode { normal, search, add, closingAdd }

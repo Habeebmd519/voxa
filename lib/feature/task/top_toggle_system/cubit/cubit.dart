@@ -6,11 +6,7 @@ class TopBarCubit extends Cubit<TopMode> {
 
   void showSearch() => emit(TopMode.search);
 
-  Future<void> showAdd() async {
-    emit(TopMode.addPreparing);
-
-    await Future.delayed(const Duration(milliseconds: 250));
-
+  void showAdd() {
     emit(TopMode.add);
   }
 

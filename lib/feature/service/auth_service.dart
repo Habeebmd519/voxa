@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/widgets.dart';
 
 class AuthService {
@@ -77,6 +78,18 @@ class AuthService {
     } catch (e) {
       debugPrint("LOGOUT FAILED: $e");
       rethrow;
+    }
+  }
+
+  Future<void> saveFcmToken() async {
+    String? token = await FirebaseMessaging.instance.getToken();
+
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user != null && token != null) {
+      await FirebaseFirestore.instance.collection("users").doc(user.uid).update(
+        {"fcmToken": token},
+      );
     }
   }
 
