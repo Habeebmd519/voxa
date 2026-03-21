@@ -135,6 +135,11 @@ class PremiumAnimatedButton extends StatelessWidget {
                 );
 
                 if (!context.mounted) return;
+                if (user != null) {
+                  Future.delayed(const Duration(seconds: 2), () {
+                    _authService.saveOneSignalId();
+                  });
+                }
 
                 _showSnack(context, "Login success! UID: ${user?.uid}");
               } else if (selectedButton == AuthButton.signup) {
@@ -157,10 +162,14 @@ class PremiumAnimatedButton extends StatelessWidget {
                 );
 
                 if (!context.mounted) return;
+                if (user != null) {
+                  Future.delayed(const Duration(seconds: 2), () {
+                    _authService.saveOneSignalId();
+                  });
+                }
 
                 _showSnack(context, "Sign up success! UID: ${user?.uid}");
               }
-              _authService.saveFcmToken();
 
               // Navigate to Home / next screen after successful login/signup
               if (navigate) {

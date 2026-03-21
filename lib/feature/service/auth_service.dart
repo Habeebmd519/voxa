@@ -2,10 +2,32 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/widgets.dart';
+import 'package:onesignal_flutter/onesignal_flutter.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _db = FirebaseFirestore.instance;
+
+  /// for player id
+  Future<void> saveOneSignalId() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+
+      final playerId = OneSignal.User.pushSubscription.id;
+
+      if (playerId != null) {
+        await FirebaseFirestore.instance
+            .collection("users")
+            .doc(user.uid)
+            .update({"oneSignalId": playerId});
+
+        debugPrint("OneSignal ID saved: $playerId");
+      }
+    } catch (e) {
+      debugPrint("Save OneSignal ID failed: $e");
+    }
+  }
 
   /// SIGN UP with Email & Password
   Future<User?> signUp({

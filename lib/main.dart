@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:voxa/blocs/buttonAnm_bloc/button_bloc.dart';
 import 'package:voxa/blocs/checkBoxBoc/check_bloc.dart';
@@ -31,25 +32,19 @@ import 'package:voxa/firebase_options.dart';
 // import 'package:voxa/screens/screen_home.dart';
 import 'package:voxa/screens/screen_login.dart';
 
-// import 'package:voxa/screens/test.dart';
-Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp();
-  print("Background message: ${message.notification?.title}");
-}
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-
-  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
   await Supabase.initialize(
     url: 'https://jdzcmcyydsxfbycxxqgp.supabase.co',
     anonKey:
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpkemNtY3l5ZHN4ZmJ5Y3h4cWdwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5OTc3ODksImV4cCI6MjA4ODU3Mzc4OX0.0YRdi-zPbhoYiQXnJIGSU9WMa4JmPiJewReRFIQ_Evw',
   );
-  await NotificationService().init();
+  OneSignal.initialize("887ea13a-f0ef-41f5-96bd-6cb3eb1a3988");
+  OneSignal.Notifications.requestPermission(true);
+
   runApp(const MyApp());
 }
 

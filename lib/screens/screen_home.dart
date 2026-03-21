@@ -422,6 +422,7 @@ class ScreenHome extends StatelessWidget {
                                 )
                               : null,
                         ),
+
                         title: Text(
                           user.name,
                           style: const TextStyle(fontWeight: FontWeight.w600),
@@ -443,6 +444,14 @@ class ScreenHome extends StatelessWidget {
                           //   ),
                           // );
                         },
+                        trailing: CircleAvatar(
+                          radius: 10,
+                          backgroundColor: Colors.green,
+                          child: Text(
+                            user.unreadCount.toString(),
+                            style: TextStyle(color: Colors.white, fontSize: 12),
+                          ),
+                        ),
                       );
                     },
                   );
