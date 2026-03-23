@@ -13,48 +13,72 @@ class ChatRepository {
     required String text,
   }) async {
     final currentUser = FirebaseAuth.instance.currentUser!;
-
+    final senderId = currentUser.uid;
     final chatRef = firestore.collection('chats').doc(chatId);
 
+    // 1. Prepare message data
     final messageData = {
-      'senderId': currentUser.uid,
+      'senderId': senderId,
       'receiverId': receiverId,
       'text': text,
       'timestamp': FieldValue.serverTimestamp(),
       'isRead': false,
     };
 
+    // 2. Update the CHATS collection (for the specific conversation)
     final chatSnapshot = await chatRef.get();
-
     if (!chatSnapshot.exists) {
       await chatRef.set({
-        'participants': [currentUser.uid, receiverId],
+        'participants': [senderId, receiverId],
         'lastMessage': text,
         'lastTimestamp': FieldValue.serverTimestamp(),
-        'lastSenderId': currentUser.uid,
-        'unreadCount': 1, // first message
+        'lastSenderId': senderId,
+        'unreadCount': {senderId: 0, receiverId: 1},
       });
     } else {
       await chatRef.update({
         'lastMessage': text,
         'lastTimestamp': FieldValue.serverTimestamp(),
-        'lastSenderId': currentUser.uid,
-        'unreadCount': FieldValue.increment(1),
+        'lastSenderId': senderId,
+        'unreadCount.$receiverId': FieldValue.increment(1),
       });
     }
 
-    // Save message
+    // 3. Save the message in the sub-collection
     await chatRef.collection('messages').add(messageData);
 
-    // 🔔 Notification (already correct)
+    // --- 🔥 NEW: UPDATE THE USERS COLLECTION ---
+    // This is what removes "Say hi 👋" from the home screen
+    final batch = firestore.batch();
+
+    final senderUserRef = firestore.collection('users').doc(senderId);
+    final receiverUserRef = firestore.collection('users').doc(receiverId);
+
+    final userUpdateData = {
+      'lastMessage': text,
+      'lastSenderId': senderId,
+      'lastSeen': FieldValue.serverTimestamp(),
+    };
+
+    batch.update(senderUserRef, userUpdateData);
+    batch.update(receiverUserRef, userUpdateData);
+
+    // Update unread count inside the User document specifically
+    batch.update(receiverUserRef, {
+      'unreadCount.$senderId': FieldValue.increment(1),
+    });
+
+    await batch.commit();
+    // --------------------------------------------
+
+    // 4. Send Notification (Existing logic)
     final receiverDoc = await firestore
         .collection('users')
         .doc(receiverId)
         .get();
-
     final oneSignalId = receiverDoc.data()?['oneSignalId'];
 
-    if (oneSignalId != null) {
+    if (oneSignalId != null && oneSignalId.toString().isNotEmpty) {
       await NotificationHelper.sendPushNotification(
         playerId: oneSignalId,
         message: text,

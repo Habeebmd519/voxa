@@ -6,7 +6,7 @@ import 'package:intl/intl.dart';
 
 import 'package:voxa/core/navigation/home_nav_controller.dart';
 import 'package:voxa/core/widgets/bottom_content.dart';
-import 'package:voxa/feature/service/auth_service.dart';
+import 'package:voxa/feature/auth/data/services/auth_service.dart';
 import 'package:voxa/feature/task/bottomSheet/cubit/sheet_cubit.dart';
 import 'package:voxa/feature/task/bottomSheet/cubit/sheet_state.dart';
 import 'package:voxa/feature/task/chatSheetManagemnt/chatSheetManage.dart';
@@ -14,11 +14,12 @@ import 'package:voxa/feature/task/chatSheetManagemnt/chatSheetMangemetState.dart
 
 import 'package:voxa/feature/task/top_toggle_system/cubit/cubit.dart';
 import 'package:voxa/feature/task/top_toggle_system/enum.dart';
-import 'package:voxa/feature/task/user/screen/chat_screen.dart';
+import 'package:voxa/feature/user/bloc/UserCubit.dart';
+import 'package:voxa/feature/user/screen/chat_screen.dart';
 import 'package:voxa/screens/screen_home.dart';
 // import 'package:voxa/screens/screen_login.dart';
 import 'package:crystal_navigation_bar/crystal_navigation_bar.dart';
-import 'package:voxa/screens/screen_login.dart';
+import 'package:voxa/feature/auth/presentation/screens/screen_login.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -32,6 +33,16 @@ class _MainScreenState extends State<MainScreen> {
   AuthService authService = AuthService();
 
   final _page = [ScreenHome(), ScreenHome(), ScreenHome(), ScreenHome()];
+  @override
+  void initState() {
+    super.initState();
+
+    FirebaseAuth.instance.authStateChanges().listen((user) {
+      if (user != null) {
+        context.read<UserCubit>().listenUsers();
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
