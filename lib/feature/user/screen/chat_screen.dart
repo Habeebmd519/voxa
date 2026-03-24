@@ -47,7 +47,7 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  void sendMessage() {
+  void sendMessage(currentUserId) {
     final text = _messageController.text.trim();
 
     if (text.isEmpty) return;
@@ -56,6 +56,7 @@ class _ChatScreenState extends State<ChatScreen> {
       chatId: chatId,
       receiverId: widget.receiverUser.uid,
       text: text,
+      currentUserId: currentUserId,
     );
 
     _messageController.clear();
@@ -63,13 +64,8 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   Widget build(BuildContext context) {
-    print("AUTH USER 👉 ${FirebaseAuth.instance.currentUser}");
-    final messagesStream = firestore
-        .collection('chats')
-        .doc(chatId)
-        .collection('messages')
-        .orderBy('timestamp', descending: true)
-        .snapshots();
+    final currentUserId = FirebaseAuth.instance.currentUser!.uid;
+    // print("AUTH USER 👉 ${FirebaseAuth.instance.currentUser}");
 
     return SafeArea(
       child: BlocBuilder<SheetCubit, SheetState>(
@@ -135,6 +131,13 @@ class _ChatScreenState extends State<ChatScreen> {
                               print("MSG ERROR 👉 ${msgSnapshot.error}");
                               return Center(
                                 child: Text(msgSnapshot.error.toString()),
+                              );
+                            }
+                            if (msgSnapshot.hasData &&
+                                msgSnapshot.data!.docs.isNotEmpty) {
+                              context.read<ChatCubitt>().markChatAsRead(
+                                chatId: chatId,
+                                receiverId: widget.receiverUser.uid,
                               );
                             }
 
@@ -293,7 +296,7 @@ class _ChatScreenState extends State<ChatScreen> {
                               },
                             );
 
-                            return Center(child: CircularProgressIndicator());
+                            // return Center(child: CircularProgressIndicator());
                           },
                         );
                       },
@@ -398,7 +401,9 @@ class _ChatScreenState extends State<ChatScreen> {
                           ),
                           child: IconButton(
                             icon: const Icon(Icons.send, color: Colors.white),
-                            onPressed: sendMessage,
+                            onPressed: () {
+                              sendMessage(currentUserId);
+                            },
                           ),
                         ),
                       ],

@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:voxa/core/network/notfication_helper/notfication_helper.dart';
 import 'package:voxa/feature/chat/Repositories/chat_repository/chat_repository.dart';
 import 'chat_state.dart';
 
@@ -15,15 +16,62 @@ class ChatCubitt extends Cubit<ChatState> {
     required String chatId,
     required String receiverId,
     required String text,
+    required String currentUserId,
   }) async {
     try {
-      emit(ChatSending());
+      // 1. We don't wait for 'ChatSending' to update Firestore.
+      // We want this to be a "Fire and Forget" operation for speed.
 
-      await repository.sendMessage(
-        chatId: chatId,
-        receiverId: receiverId,
-        text: text,
-      );
+      final batch = firestore.batch();
+      final msgRef = firestore
+          .collection('chats')
+          .doc(chatId)
+          .collection('messages')
+          .doc();
+      final senderRef = firestore.collection('users').doc(currentUserId);
+      final receiverRef = firestore.collection('users').doc(receiverId);
+
+      // Save Message
+      batch.set(msgRef, {
+        'senderId': currentUserId,
+        'receiverId': receiverId,
+        'text': text,
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+
+      // Update Receiver (Increment unread)
+      batch.update(receiverRef, {
+        'unreadCount.$currentUserId': FieldValue.increment(1),
+        'lastMessage': text,
+        'lastSenderId': currentUserId,
+      });
+
+      // Update Sender (Sync last message)
+      batch.update(senderRef, {
+        'lastMessage': text,
+        'lastSenderId': currentUserId,
+      });
+
+      // Execute everything in ONE network request
+      await batch.commit();
+      final receiverDoc = await firestore
+          .collection('users')
+          .doc(receiverId)
+          .get();
+
+      final oneSignalId = receiverDoc.data()?['oneSignalId'];
+
+      if (oneSignalId != null && oneSignalId.toString().isNotEmpty) {
+        await NotificationHelper.sendPushNotification(
+          playerId: oneSignalId,
+          message: text,
+          senderName: FirebaseAuth.instance.currentUser?.email ?? "New message",
+        );
+      }
+
+      // 2. Since we handled the Firestore logic here,
+      // check your Repository. If repository.sendMessage
+      // ALSO updates counts, you MUST remove that code from the repository.
 
       emit(ChatSent());
     } catch (e) {
@@ -36,7 +84,7 @@ class ChatCubitt extends Cubit<ChatState> {
     required String receiverId,
   }) async {
     final currentUserId = FirebaseAuth.instance.currentUser!.uid;
-
+    // Clears the badge for the logged-in user
     await firestore.collection('users').doc(currentUserId).update({
       'unreadCount.$receiverId': 0,
     });

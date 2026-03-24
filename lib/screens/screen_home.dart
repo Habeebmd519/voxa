@@ -392,69 +392,127 @@ class ScreenHome extends StatelessWidget {
                   return const Center(child: Text("No users found"));
 
                 if (state is UserLoaded) {
-                  final users = state.users;
+                  // final users = state.users;
 
-                  return ListView.separated(
-                    itemCount: users.length,
-                    separatorBuilder: (_, __) =>
-                        const Divider(height: 1, color: Color(0xFFAFDA6F)),
-                    itemBuilder: (context, i) {
-                      final user = users[i]; // This is already a UserModel
-                      final currentUserId =
-                          FirebaseAuth.instance.currentUser!.uid;
-                      final myUnread = user.unreadCount[currentUserId] ?? 0;
+                  final currentUserId = FirebaseAuth.instance.currentUser!.uid;
 
-                      return ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: const Color(0xFFAFDA6F),
-                          radius: 22,
-                          // FIX: Removed .user
-                          backgroundImage:
-                              user.photoUrl != null && user.photoUrl!.isNotEmpty
-                              ? NetworkImage(user.photoUrl!)
-                              : null,
-                          child: user.photoUrl == null || user.photoUrl!.isEmpty
-                              ? Text(
-                                  user.name.isNotEmpty
-                                      ? user.name[0].toUpperCase()
-                                      : '?', // FIX: Removed .user
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                )
-                              : null,
-                        ),
-                        title: Text(
-                          user.name, // FIX: Removed .user
-                          style: const TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                        subtitle: Text(
-                          user.lastMessage != null &&
-                                  user.lastMessage!.isNotEmpty
-                              ? user.lastMessage!
-                              : "Say hi 👋",
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(color: Colors.grey.shade600),
-                        ),
-                        onTap: () {
-                          // FIX: Pass 'user' directly, removed .user
-                          context.read<SheetCubit>().openChat(user);
+                  final users = state.users
+                      .where((u) => u.uid != currentUserId)
+                      .toList();
+
+                  ///
+                  // final currentUserId = FirebaseAuth.instance.currentUser!.uid;
+
+                  // final users = state.users
+                  //     .where((u) => u.uid != currentUserId)
+                  //     .toList();
+
+                  ///
+                  return StreamBuilder<DocumentSnapshot>(
+                    stream: FirebaseFirestore.instance
+                        .collection('users')
+                        .doc(currentUserId)
+                        .snapshots(),
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+
+                      final data =
+                          snapshot.data!.data() as Map<String, dynamic>;
+                      final unreadMap =
+                          data['unreadCount'] as Map<String, dynamic>? ?? {};
+
+                      return ListView.separated(
+                        itemCount: users.length,
+                        separatorBuilder: (_, __) =>
+                            const Divider(height: 1, color: Color(0xFFAFDA6F)),
+                        itemBuilder: (context, i) {
+                          final user = users[i]; // This is already a UserModel
+                          final currentUserId =
+                              FirebaseAuth.instance.currentUser!.uid;
+
+                          final myUnread = unreadMap[user.uid] ?? 0;
+                          // //////
+                          // final currentUserData = users.firstWhere(
+                          //   (u) => u.uid == currentUserId,
+                          // );
+
+                          // final myUnread =
+                          //     currentUserData.unreadCount[user.uid] ?? 0;
+                          // /////
+                          // if (user == currentUserId) {}
+                          return ListTile(
+                            leading: CircleAvatar(
+                              backgroundColor: const Color(0xFFAFDA6F),
+                              radius: 22,
+                              // FIX: Removed .user
+                              backgroundImage:
+                                  user.photoUrl != null &&
+                                      user.photoUrl!.isNotEmpty
+                                  ? NetworkImage(user.photoUrl!)
+                                  : null,
+                              child:
+                                  user.photoUrl == null ||
+                                      user.photoUrl!.isEmpty
+                                  ? Text(
+                                      user.name.isNotEmpty
+                                          ? user.name[0].toUpperCase()
+                                          : '?', // FIX: Removed .user
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    )
+                                  : null,
+                            ),
+                            title: Text(
+                              user.name, // FIX: Removed .user
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            subtitle: Text(
+                              user.lastMessage != null &&
+                                      user.lastMessage!.isNotEmpty
+                                  ? user.lastMessage!
+                                  : "Say hi 👋",
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                // Make text bold if there are unread messages
+                                fontWeight: myUnread > 0
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                                color: myUnread > 0
+                                    ? Colors.black
+                                    : Colors.grey,
+                              ),
+                            ),
+                            onTap: () {
+                              FirebaseFirestore.instance
+                                  .collection('users')
+                                  .doc(currentUserId)
+                                  .update({'unreadCount.${user.uid}': 0});
+                              // FIX: Pass 'user' directly, removed .user
+                              context.read<SheetCubit>().openChat(user);
+                            },
+                            trailing:
+                                (myUnread >
+                                    0) // Remove the lastSenderId check - show unread regardless of who sent last
+                                ? CircleAvatar(
+                                    radius: 10,
+                                    backgroundColor: Colors.green,
+                                    child: Text(
+                                      myUnread.toString(),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  )
+                                : null,
+                          );
                         },
-                        trailing:
-                            (myUnread > 0 && user.lastSenderId != currentUserId)
-                            ? CircleAvatar(
-                                radius: 10,
-                                backgroundColor: Colors.green,
-                                child: Text(
-                                  myUnread.toString(),
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              )
-                            : null,
                       );
                     },
                   );

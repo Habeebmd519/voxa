@@ -1,11 +1,10 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class NotificationHelper {
-  static const String _appId = "887ea13a-f0ef-41f5-96bd-6cb3eb1a3988";
-  static const String _restApiKey =
-      "REMOVED";
-
+  static String get _appId => dotenv.env['ONESIGNAL_APP_ID']!;
+  static String get _restApiKey => dotenv.env['ONESIGNAL_REST_API_KEY']!;
   static Future<void> sendPushNotification({
     required String playerId,
     required String message,
