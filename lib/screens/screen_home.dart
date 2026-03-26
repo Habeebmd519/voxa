@@ -6,6 +6,7 @@ import 'package:lottie/lottie.dart';
 import 'package:voxa/core/navigation/home_nav_controller.dart';
 
 import 'package:hugeicons/hugeicons.dart';
+import 'package:voxa/core/network/webRTC/voice_call/voice_call_cubit.dart';
 import 'package:voxa/core/widgets/bottom_content.dart';
 
 import 'package:voxa/feature/task/bottomSheet/cubit/sheet_cubit.dart';
@@ -46,7 +47,7 @@ class ScreenHome extends StatelessWidget {
                                 SheetState2,
                               ))
                       : index == 1
-                      ? _buildAudioSection()
+                      ? _buildAudioSection(context)
                       : index == 2
                       ? _buildVideoSction()
                       : index == 3
@@ -166,7 +167,7 @@ class ScreenHome extends StatelessWidget {
   ////.    ADIO SECTION     //////////////////////////
   ////////////////////////////////////////////////////
 
-  Widget _buildAudioSection() {
+  Widget _buildAudioSection(BuildContext context) {
     return Column(
       children: [
         Padding(
@@ -177,8 +178,22 @@ class ScreenHome extends StatelessWidget {
                 child: InkWell(
                   borderRadius: BorderRadius.circular(16),
                   onTap: () {
-                    // TODO: walky-talky action
+                    String callId = FirebaseFirestore.instance
+                        .collection('calls')
+                        .doc()
+                        .id;
+
+                    context.read<CallCubit>().startCall(callId);
                   },
+
+                  //                    () {
+                  //                     // TODO: walky-talky action
+
+                  //   String callId =
+                  //       FirebaseFirestore.instance.collection('calls').doc().id;
+
+                  //   context.read<CallCubit>().startCall(callId);
+                  // }
                   child: Container(
                     width: double.infinity,
                     height: 180,
