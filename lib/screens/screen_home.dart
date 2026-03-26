@@ -598,9 +598,12 @@ class ScreenHome extends StatelessWidget {
     );
   }
 
+  /////////////////////////////////////////////////////
+  ////.    CHAT SECTION     //////////////////////////
+  ////////////////////////////////////////////////////
+
   Widget _buildProfileSection() {
     final user = FirebaseAuth.instance.currentUser;
-
     if (user == null) {
       return const Center(child: Text("Not logged in"));
     }
@@ -609,92 +612,35 @@ class ScreenHome extends StatelessWidget {
         if (state is ProfileLoading) {
           return const Center(child: CircularProgressIndicator());
         }
-
         if (state is ProfileError) {
-          print(state.message);
           return Center(child: Text(state.message));
         }
-
         if (state is ProfileLoaded) {
           return Column(
             children: [
-              const SizedBox(height: 30),
-              Stack(
-                alignment: Alignment.bottomRight,
-                children: [
-                  CircleAvatar(
-                    radius: 60,
-                    backgroundColor: const Color(0xFFAFDA6F),
-                    backgroundImage:
-                        (state.photoUrl != null && state.photoUrl!.isNotEmpty)
-                        ? NetworkImage(
-                            "${state.photoUrl!}?t=${DateTime.now().millisecondsSinceEpoch}",
-                          )
-                        : null,
-                    child: (state.photoUrl == null || state.photoUrl!.isEmpty)
-                        ? Text(
-                            state.name.isNotEmpty
-                                ? state.name[0].toUpperCase()
-                                : "?",
-                            style: const TextStyle(
-                              fontSize: 40,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
-                            ),
-                          )
-                        : null,
-                  ),
+              /// ── Purple header with blurred background + avatar ──
+              _ProfileHeader(state: state),
 
-                  GestureDetector(
-                    onTap: () {
-                      context.read<ProfileCubit>().pickAndUploadImage();
-                    },
-                    child: const CircleAvatar(
-                      radius: 18,
-                      backgroundColor: Colors.white,
-                      child: Icon(Icons.camera_alt, size: 18),
-                    ),
-                  ),
-                ],
-              ),
+              /// ── Scrollable info fields below ──
               Expanded(
-                child: AnimatedBottomContent(
-                  contentKey: const ValueKey("profile_sheet"),
-                  child: ListView(
-                    children: [
-                      const SizedBox(height: 20),
-
-                      /// NAME
-                      Text(
-                        state.name,
-                        style: const TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-
-                      const SizedBox(height: 6),
-
-                      /// EMAIL
-                      Text(
-                        state.email,
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-
-                      const SizedBox(height: 30),
-
-                      /// LOGOUT BUTTON (Optional)
-                      ElevatedButton(
-                        onPressed: () {
-                          // logout logic
-                        },
-                        child: const Text("Logout"),
-                      ),
-                    ],
+                child: ListView(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 8,
                   ),
+                  children: [
+                    const SizedBox(height: 12),
+                    _ProfileInfoTile(label: "Name", value: state.name),
+                    _ProfileInfoTile(label: "Email", value: state.email),
+                    _ProfileInfoTile(label: "Password", value: "••••••••"),
+                    _ProfileInfoTile(
+                      label: "User ID",
+                      value: user.uid.substring(0, 8),
+                    ),
+                    // Add more fields as needed
+                    const SizedBox(height: 24),
+                    _LogoutButton(),
+                  ],
                 ),
               ),
             ],
@@ -704,6 +650,113 @@ class ScreenHome extends StatelessWidget {
       },
     );
   }
+
+  // Widget _buildProfileSection() {
+  //   final user = FirebaseAuth.instance.currentUser;
+
+  //   if (user == null) {
+  //     return const Center(child: Text("Not logged in"));
+  //   }
+  //   return BlocBuilder<ProfileCubit, ProfileState>(
+  //     builder: (context, state) {
+  //       if (state is ProfileLoading) {
+  //         return const Center(child: CircularProgressIndicator());
+  //       }
+
+  //       if (state is ProfileError) {
+  //         print(state.message);
+  //         return Center(child: Text(state.message));
+  //       }
+
+  //       if (state is ProfileLoaded) {
+  //         return Column(
+  //           children: [
+  //             const SizedBox(height: 30),
+  //             Stack(
+  //               alignment: Alignment.bottomRight,
+  //               children: [
+  //                 CircleAvatar(
+  //                   radius: 60,
+  //                   backgroundColor: const Color(0xFFAFDA6F),
+  //                   backgroundImage:
+  //                       (state.photoUrl != null && state.photoUrl!.isNotEmpty)
+  //                       ? NetworkImage(
+  //                           "${state.photoUrl!}?t=${DateTime.now().millisecondsSinceEpoch}",
+  //                         )
+  //                       : null,
+  //                   child: (state.photoUrl == null || state.photoUrl!.isEmpty)
+  //                       ? Text(
+  //                           state.name.isNotEmpty
+  //                               ? state.name[0].toUpperCase()
+  //                               : "?",
+  //                           style: const TextStyle(
+  //                             fontSize: 40,
+  //                             fontWeight: FontWeight.bold,
+  //                             color: Colors.black,
+  //                           ),
+  //                         )
+  //                       : null,
+  //                 ),
+
+  //                 GestureDetector(
+  //                   onTap: () {
+  //                     context.read<ProfileCubit>().pickAndUploadImage();
+  //                   },
+  //                   child: const CircleAvatar(
+  //                     radius: 18,
+  //                     backgroundColor: Colors.white,
+  //                     child: Icon(Icons.camera_alt, size: 18),
+  //                   ),
+  //                 ),
+  //               ],
+  //             ),
+  //             Expanded(
+  //               child: AnimatedBottomContent(
+  //                 contentKey: const ValueKey("profile_sheet"),
+  //                 child: ListView(
+  //                   children: [
+  //                     const SizedBox(height: 20),
+
+  //                     /// NAME
+  //                     Text(
+  //                       state.name,
+  //                       style: const TextStyle(
+  //                         fontSize: 22,
+  //                         fontWeight: FontWeight.bold,
+  //                       ),
+  //                     ),
+
+  //                     const SizedBox(height: 6),
+
+  //                     /// EMAIL
+  //                     Text(
+  //                       state.email,
+  //                       style: TextStyle(
+  //                         fontSize: 16,
+  //                         color: Colors.grey.shade600,
+  //                       ),
+  //                     ),
+
+  //                     const SizedBox(height: 30),
+
+  //                     /// LOGOUT BUTTON (Optional)
+  //                     ElevatedButton(
+  //                       onPressed: () {
+  //                         // logout logic
+  //                       },
+  //                       child: const Text("Logout"),
+  //                     ),
+  //                   ],
+  //                 ),
+  //               ),
+  //             ),
+  //           ],
+  //         );
+  //       }
+  //       return const SizedBox();
+  //     },
+  //   );
+  // }
 }
 
 class BouncingArrow extends StatefulWidget {
@@ -755,6 +808,216 @@ class _BouncingArrowState extends State<BouncingArrow>
           Icons.keyboard_arrow_up,
           size: 40,
           color: Color.fromARGB(255, 175, 218, 111),
+        ),
+      ),
+    );
+  }
+}
+
+/// ── Header widget ──────────────────────────────────────────────
+class _ProfileHeader extends StatelessWidget {
+  final ProfileLoaded state;
+  const _ProfileHeader({required this.state});
+
+  @override
+  Widget build(BuildContext context) {
+    const purple = Color(0xFF7B2FBE);
+
+    return SizedBox(
+      height: 220,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          /// Purple gradient background
+          Container(
+            height: 170,
+            width: double.infinity,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Color(0xFF7B2FBE), Color(0xFF9B4DD4)],
+              ),
+            ),
+
+            /// Optional: blurred profile image as bg overlay
+            child: (state.photoUrl != null && state.photoUrl!.isNotEmpty)
+                ? Opacity(
+                    opacity: 0.25,
+                    child: Image.network(
+                      state.photoUrl!,
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                    ),
+                  )
+                : null,
+          ),
+
+          /// Name + location centered below avatar
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: Column(
+              children: [
+                const SizedBox(height: 52), // space for avatar
+                Text(
+                  state.name.toUpperCase(),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  "NEW YORK", // replace with state.location if available
+                  style: TextStyle(
+                    fontSize: 11,
+                    letterSpacing: 2,
+                    color: Colors.grey.shade500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          /// Avatar circle — centered, overlapping the header
+          Positioned(
+            bottom: 40,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 3),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.15),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: CircleAvatar(
+                      radius: 50,
+                      backgroundColor: purple,
+                      backgroundImage:
+                          (state.photoUrl != null && state.photoUrl!.isNotEmpty)
+                          ? NetworkImage(
+                              "${state.photoUrl!}?t=${DateTime.now().millisecondsSinceEpoch}",
+                            )
+                          : null,
+                      child: (state.photoUrl == null || state.photoUrl!.isEmpty)
+                          ? Text(
+                              state.name.isNotEmpty
+                                  ? state.name[0].toUpperCase()
+                                  : "?",
+                              style: const TextStyle(
+                                fontSize: 36,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            )
+                          : null,
+                    ),
+                  ),
+
+                  /// Camera button bottom-right of avatar
+                  Positioned(
+                    bottom: 0,
+                    right: -4,
+                    child: GestureDetector(
+                      onTap: () =>
+                          context.read<ProfileCubit>().pickAndUploadImage(),
+                      child: Container(
+                        width: 30,
+                        height: 30,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.12),
+                              blurRadius: 6,
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.camera_alt_rounded,
+                          size: 16,
+                          color: Color(0xFF7B2FBE),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// ── Single info row ────────────────────────────────────────────
+class _ProfileInfoTile extends StatelessWidget {
+  final String label;
+  final String value;
+  const _ProfileInfoTile({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 16),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF7B2FBE),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: const TextStyle(fontSize: 15, color: Colors.black87),
+        ),
+        const SizedBox(height: 12),
+        Divider(height: 1, color: Colors.grey.shade200),
+      ],
+    );
+  }
+}
+
+/// ── Logout button ──────────────────────────────────────────────
+class _LogoutButton extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton(
+        onPressed: () {
+          // your logout logic
+        },
+        style: OutlinedButton.styleFrom(
+          foregroundColor: const Color(0xFF7B2FBE),
+          side: const BorderSide(color: Color(0xFF7B2FBE)),
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        child: const Text(
+          "Logout",
+          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
         ),
       ),
     );
