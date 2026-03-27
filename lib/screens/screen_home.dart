@@ -2,11 +2,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:lottie/lottie.dart';
+
 import 'package:voxa/core/navigation/home_nav_controller.dart';
 
 import 'package:hugeicons/hugeicons.dart';
 import 'package:voxa/core/network/webRTC/voice_call/voice_call_cubit.dart';
+import 'package:voxa/core/shimmer_loading/shimmer_loading.dart';
 import 'package:voxa/core/widgets/bottom_content.dart';
 
 import 'package:voxa/feature/task/bottomSheet/cubit/sheet_cubit.dart';
@@ -52,7 +53,7 @@ class ScreenHome extends StatelessWidget {
                           : index == 2
                           ? _buildVideoSction()
                           : index == 3
-                          ? _buildProfileSection(ProState)
+                          ? _buildProfileSection(ProState, context)
                           : SizedBox(),
                     );
                   },
@@ -611,53 +612,26 @@ class ScreenHome extends StatelessWidget {
   static const kPurple = Color.fromARGB(255, 79, 127, 47);
   static const kDarkGreen = Color(0xFF4a7c1f);
 
-  Widget _buildProfileSection(ProfileState state) {
+  Widget _buildProfileSection(ProfileState state, BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       return const Center(child: Text("Not logged in"));
     }
+
+    final testState = ProfileLoading();
+
     // if (sate is) {}
     return Column(
       children: [
-        if (state is ProfileLoading) ...{CircularProgressIndicator()},
-        if (state is ProfileError) ...{Text(state.message)},
-        if (state is ProfileLoaded) ...{
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: _ProfileHeroCard(state: state),
+        // SizedBox(height: 30),
+        _buildTopSection(testState),
+        const SizedBox(height: 16),
+        Expanded(
+          child: AnimatedBottomContent(
+            contentKey: const ValueKey("profile_sheet"),
+            child: _buildBottomSection(testState, user.uid),
           ),
-          const SizedBox(height: 16),
-          Expanded(
-            child: AnimatedBottomContent(
-              contentKey: const ValueKey("profile_sheet"),
-              child: BlocBuilder<ProfileCubit, ProfileState>(
-                builder: (context, innerState) {
-                  if (innerState is ProfileLoading) {
-                    return const Center(
-                      child: CircularProgressIndicator(color: kPurple),
-                    );
-                  }
-                  if (innerState is ProfileError) {
-                    print(innerState.message);
-                    return Center(
-                      child: Text(
-                        innerState.message,
-                        style: const TextStyle(color: Colors.red),
-                      ),
-                    );
-                  }
-                  if (innerState is ProfileLoaded) {
-                    return _ProfileSheetContent(
-                      state: innerState,
-                      uid: user.uid,
-                    );
-                  }
-                  return const SizedBox();
-                },
-              ),
-            ),
-          ),
-        },
+        ),
       ],
     );
 
@@ -722,6 +696,40 @@ class ScreenHome extends StatelessWidget {
     // );
   }
 
+  Widget _buildTopSection(ProfileState state) {
+    if (state is ProfileLoading) {
+      return SizedBox();
+    }
+
+    if (state is ProfileError) {
+      return Text(state.message);
+    }
+
+    if (state is ProfileLoaded) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: _ProfileHeroCard(state: state),
+      );
+    }
+
+    return const SizedBox();
+  }
+
+  Widget _buildBottomSection(ProfileState state, String uid) {
+    if (state is ProfileLoading) {
+      return const Center(child: ProfileShimmer()); // or mini shimmer
+    }
+
+    if (state is ProfileError) {
+      return Center(child: Text(state.message));
+    }
+
+    if (state is ProfileLoaded) {
+      return _ProfileSheetContent(state: state, uid: uid);
+    }
+
+    return const SizedBox();
+  }
   // Widget _buildTopBar(BuildContext context, String name) {
   //   return Padding(
   //     padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
@@ -1000,8 +1008,13 @@ class _ProfileHeroCard extends StatelessWidget {
                     bottom: 0,
                     right: -2,
                     child: GestureDetector(
-                      onTap: () =>
-                          context.read<ProfileCubit>().pickAndUploadImage(),
+                      onTap: () => showModalBottomSheet(
+                        context: context,
+                        backgroundColor: Colors.transparent,
+                        builder: (_) => _popupBuilder(context),
+                      ),
+
+                      // context.read<ProfileCubit>().pickAndUploadImage(),
                       child: Container(
                         width: 26,
                         height: 26,
@@ -1095,6 +1108,261 @@ class _ProfileHeroCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _popupBuilder(BuildContext context) {
+    final bool _hasPhoto = state.photoUrl != null && state.photoUrl!.isNotEmpty;
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      padding: const EdgeInsets.only(bottom: 32),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Handle bar
+          Container(
+            margin: const EdgeInsets.symmetric(vertical: 12),
+            width: 36,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+
+          // Header
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Profile Photo',
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF1A1A2E),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Choose an action',
+                      style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                    ),
+                  ],
+                ),
+                GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[100],
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.close,
+                      size: 18,
+                      color: Colors.grey,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 8),
+
+          // Action items
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Column(
+              children: [
+                // ADD
+                _buildActionTile(
+                  icon: Icons.add_photo_alternate_outlined,
+                  label: 'Add Photo',
+                  subtitle: 'Upload from your gallery',
+                  iconColor: const Color(0xFF16A34A),
+                  iconBg: const Color(0xFF22C55E18),
+                  tileBg: const Color(0xFFF0FDF4),
+                  tileBorder: const Color(0xFFBBF7D0),
+                  badgeLabel: 'Available',
+                  badgeColor: const Color(0xFF22C55E),
+                  badgeBg: const Color(0xFFDCFCE7),
+                  enabled: !_hasPhoto,
+                  onTap: () {
+                    Navigator.pop(context);
+                    context.read<ProfileCubit>().pickAndUploadImage();
+                  },
+                ),
+
+                const SizedBox(height: 8),
+
+                // CHANGE
+                _buildActionTile(
+                  icon: Icons.upload_outlined,
+                  label: 'Change Photo',
+                  subtitle: 'Replace with a new one',
+                  iconColor: const Color(0xFF2563EB),
+                  iconBg: const Color(0xFF3B82F618),
+                  tileBg: const Color(0xFFEFF6FF),
+                  tileBorder: const Color(0xFFBFDBFE),
+                  badgeLabel: 'Replace',
+                  badgeColor: const Color(0xFF3B82F6),
+                  badgeBg: const Color(0xFFDBEAFE),
+                  enabled: _hasPhoto,
+                  onTap: () async {
+                    Navigator.pop(context);
+                    final success = await context
+                        .read<ProfileCubit>()
+                        .deleteMyProfileImage();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          success
+                              ? "Profile photo deleted, Now choose one you want to.."
+                              : "Failed to delete photo",
+                        ),
+                        backgroundColor: success ? Colors.green : Colors.red,
+                      ),
+                    );
+                    context.read<ProfileCubit>().pickAndUploadImage();
+                  },
+                ),
+
+                const SizedBox(height: 8),
+
+                // DELETE
+                _buildActionTile(
+                  icon: Icons.delete_outline_rounded,
+                  label: 'Delete Photo',
+                  subtitle: 'Remove profile picture',
+                  iconColor: const Color(0xFFDC2626),
+                  iconBg: const Color(0xFFEF444418),
+                  tileBg: const Color(0xFFFFF5F5),
+                  tileBorder: const Color(0xFFFECACA),
+                  badgeLabel: 'Remove',
+                  badgeColor: const Color(0xFFEF4444),
+                  badgeBg: const Color(0xFFFEE2E2),
+                  enabled: _hasPhoto,
+                  onTap: () async {
+                    Navigator.pop(context);
+                    final success = await context
+                        .read<ProfileCubit>()
+                        .deleteMyProfileImage();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          success
+                              ? "Profile photo deleted,"
+                              : "Failed to delete photo",
+                        ),
+                        backgroundColor: Colors.black,
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionTile({
+    required IconData icon,
+    required String label,
+    required String subtitle,
+    required Color iconColor,
+    required Color iconBg,
+    required Color tileBg,
+    required Color tileBorder,
+    required String badgeLabel,
+    required Color badgeColor,
+    required Color badgeBg,
+    required bool enabled,
+    required VoidCallback onTap,
+  }) {
+    return Opacity(
+      opacity: enabled ? 1.0 : 0.4,
+      child: GestureDetector(
+        onTap: enabled ? onTap : null,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: tileBg,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: tileBorder, width: 1.5),
+          ),
+          child: Row(
+            children: [
+              // Icon box
+              Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  color: iconBg,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(icon, color: iconColor, size: 22),
+              ),
+
+              const SizedBox(width: 14),
+
+              // Text
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF1A1A2E),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Badge
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: badgeBg,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  badgeLabel,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: badgeColor,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -1203,36 +1471,55 @@ class _ProfileSheetContent extends StatelessWidget {
     );
   }
 }
-// ── _ProfileField ──────────────────────────────────────────────────────────
 
+// ── _ProfileField ──────────────────────────────────────────────────────────
 class _ProfileField extends StatelessWidget {
   final String label;
   final String value;
+
   const _ProfileField({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF7B2FBE),
-            letterSpacing: .8,
+    return Container(
+      height: 50, // fixed height for uniform look
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 18),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEFF5F0), // softer grey
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: Row(
+        children: [
+          // LEFT LABEL
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 13,
+              color: Color(0xFF9E9E9E), // lighter grey
+              fontWeight: FontWeight.w500, // not bold
+              letterSpacing: 1.2, // spacing like design
+            ),
           ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          value,
-          style: const TextStyle(fontSize: 15, color: Color(0xFF1A1A1A)),
-        ),
-        const SizedBox(height: 14),
-        Divider(height: 1, color: Colors.grey.shade200),
-        const SizedBox(height: 4),
-      ],
+
+          const Spacer(),
+
+          // RIGHT VALUE
+          Expanded(
+            flex: 2,
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500, // medium, not bold
+                color: Color(0xFF2C2C2C),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

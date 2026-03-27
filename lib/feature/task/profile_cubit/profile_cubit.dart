@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+// import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:voxa/feature/task/profile_cubit/prifile_state.dart';
@@ -71,11 +71,13 @@ class ProfileCubit extends Cubit<ProfileState> {
       final supabase = Supabase.instance.client;
 
       // Create a path using the Firebase UID to keep it organized
-      final fileName = 'profile_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      // final fileName = 'profile_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final fileName = 'profile.jpg';
       final path = 'profiles/${user!.uid}/$fileName';
 
       try {
         // 1. Upload to Supabase
+
         await supabase.storage
             .from('voxa')
             .upload(
@@ -85,15 +87,13 @@ class ProfileCubit extends Cubit<ProfileState> {
             );
 
         // 2. Get the URL
-        final String imageUrl = supabase.storage
-            .from('voxa')
-            .getPublicUrl(path);
+        final cleanUrl = supabase.storage.from('voxa').getPublicUrl(path);
 
         // 3. Update Firestore (Since your profile data lives there)
         await FirebaseFirestore.instance
             .collection('users')
             .doc(user!.uid)
-            .update({'photoUrl': imageUrl});
+            .update({'photoUrl': cleanUrl});
 
         print("Upload and Firestore update success");
 
@@ -104,6 +104,41 @@ class ProfileCubit extends Cubit<ProfileState> {
       }
     } catch (e) {
       emit(ProfileError(e.toString()));
+    }
+  }
+
+  /// delete supabase.profile codes
+  Future<bool> deleteMyProfileImage() async {
+    if (user == null) return false;
+
+    try {
+      final supabase = Supabase.instance.client;
+      final path = 'profiles/${user!.uid}/profile.jpg';
+
+      // 1. Attempt to delete from Supabase
+      final result = await supabase.storage.from('voxa').remove([path]);
+      print("Supabase Delete Result: $result");
+
+      // 2. Safeguard: If the result is empty, Supabase didn't delete it (RLS issue or file missing)
+      if (result.isEmpty) {
+        print("Warning: File not deleted from Supabase. Check RLS policies.");
+        // Optional: Return false here if you want to prevent Firestore from updating
+        // when the storage deletion fails.
+        // return false;
+      }
+
+      // 3. Delete from Firestore ONLY if we got past the storage check safely
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user!.uid)
+          .update({'photoUrl': FieldValue.delete()});
+
+      // 4. Refresh UI
+      await loadProfile();
+      return true;
+    } catch (e) {
+      print("Delete failed: $e");
+      return false;
     }
   }
 }
