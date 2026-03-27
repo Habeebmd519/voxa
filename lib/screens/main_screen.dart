@@ -11,6 +11,8 @@ import 'package:voxa/feature/task/bottomSheet/cubit/sheet_cubit.dart';
 import 'package:voxa/feature/task/bottomSheet/cubit/sheet_state.dart';
 import 'package:voxa/feature/task/chatSheetManagemnt/chatSheetManage.dart';
 import 'package:voxa/feature/task/chatSheetManagemnt/chatSheetMangemetState.dart';
+import 'package:voxa/feature/task/profile_cubit/prifile_state.dart';
+import 'package:voxa/feature/task/profile_cubit/profile_cubit.dart';
 
 import 'package:voxa/feature/task/top_toggle_system/cubit/cubit.dart';
 import 'package:voxa/feature/task/top_toggle_system/enum.dart';
@@ -95,6 +97,24 @@ class _MainScreenState extends State<MainScreen> {
             centerTitle: true,
 
             backgroundColor: Color.fromARGB(255, 175, 218, 111),
+            actions: [
+              if (selectedIndex == 3) ...{
+                Container(
+                  width: 45,
+                  height: 45,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.5),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.edit,
+                    size: 18,
+                    color: Colors.black87,
+                  ),
+                ),
+              },
+              SizedBox(width: 10),
+            ],
             leading: BlocBuilder<SheetCubit, SheetState>(
               builder: (context, state) {
                 return BlocBuilder<TopBarCubit, TopMode>(
@@ -278,6 +298,14 @@ class _MainScreenState extends State<MainScreen> {
                 context: context,
                 removeBottom: true,
                 child: CrystalNavigationBar(
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.15),
+                      blurRadius: 20,
+                      spreadRadius: 1,
+                      offset: const Offset(0, -5), // 👈 shadow goes UP
+                    ),
+                  ],
                   currentIndex: selectedIndex,
                   onTap: (index) => HomeNavController.setIndex = index,
                   height: 70,

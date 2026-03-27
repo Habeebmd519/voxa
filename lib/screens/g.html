@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Google Anti-Gravity Hack</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #fff;
+            font-family: Arial, sans-serif;
+        }
+
+        .google-logo {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 72px;
+            font-weight: bold;
+            color: #4285f4;
+            animation: antiGravity 3s ease-in infinite;
+            cursor: pointer;
+        }
+
+        @keyframes antiGravity {
+            0% {
+                transform: translate(-50%, -50%) translateY(0);
+            }
+
+            100% {
+                transform: translate(-50%, -50%) translateY(-500px) rotate(360deg);
+            }
+        }
+
+        .logo-letter {
+            display: inline-block;
+            transition: all 0.1s;
+        }
+
+        body:hover .logo-letter {
+            transform: translateY(-10px);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="google-logo" onclick="launch()">
+        G O O G L E
+    </div>
+    <script>
+        function launch() {
+            document.querySelector('.google-logo').style.animation = 'antiGravity 2s ease-out forwards';
+        }
+    </script>
+</body>
+
+</html>

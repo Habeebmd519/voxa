@@ -21,7 +21,6 @@ import 'package:voxa/feature/task/top_toggle_system/enum.dart';
 import 'package:voxa/feature/user/bloc/UserCubit.dart';
 import 'package:voxa/feature/user/bloc/UserState.dart';
 import 'package:voxa/feature/user/screen/chat_screen.dart';
-import 'package:voxa/feature/user/service/stream_datadase_service.dart';
 
 class ScreenHome extends StatelessWidget {
   const ScreenHome({super.key});
@@ -31,28 +30,32 @@ class ScreenHome extends StatelessWidget {
     return ValueListenableBuilder(
       valueListenable: HomeNavController.index,
       builder: (context, index, _) {
-        return BlocBuilder<ChatsheetmanageCubit, ChatsheetmanageState>(
-          builder: (context, SheetState2) {
-            return BlocBuilder<SheetCubit, SheetState>(
-              builder: (context, state) {
-                return Scaffold(
-                  extendBody: true,
-                  backgroundColor: Color.fromARGB(255, 175, 218, 111),
-                  body: index == 0
-                      ? (state is ShowUsers
-                            ? _buildUserSection(state)
-                            : _buildChatSection(
-                                context,
-                                state as ShowChat,
-                                SheetState2,
-                              ))
-                      : index == 1
-                      ? _buildAudioSection(context)
-                      : index == 2
-                      ? _buildVideoSction()
-                      : index == 3
-                      ? _buildProfileSection()
-                      : SizedBox(),
+        return BlocBuilder<ProfileCubit, ProfileState>(
+          builder: (context, ProState) {
+            return BlocBuilder<ChatsheetmanageCubit, ChatsheetmanageState>(
+              builder: (context, SheetState2) {
+                return BlocBuilder<SheetCubit, SheetState>(
+                  builder: (context, state) {
+                    return Scaffold(
+                      extendBody: true,
+                      backgroundColor: Color.fromARGB(255, 175, 218, 111),
+                      body: index == 0
+                          ? (state is ShowUsers
+                                ? _buildUserSection(state)
+                                : _buildChatSection(
+                                    context,
+                                    state as ShowChat,
+                                    SheetState2,
+                                  ))
+                          : index == 1
+                          ? _buildAudioSection(context)
+                          : index == 2
+                          ? _buildVideoSction()
+                          : index == 3
+                          ? _buildProfileSection(ProState)
+                          : SizedBox(),
+                    );
+                  },
                 );
               },
             );
@@ -599,57 +602,184 @@ class ScreenHome extends StatelessWidget {
   }
 
   /////////////////////////////////////////////////////
-  ////.    CHAT SECTION     //////////////////////////
+  ////.    _buildProfileSection     //////////////////////////
   ////////////////////////////////////////////////////
 
-  Widget _buildProfileSection() {
+  // ── profile_screen.dart ────────────────────────────────────────────────────
+
+  static const kGreen = Color(0xFFB5D96A);
+  static const kPurple = Color.fromARGB(255, 79, 127, 47);
+  static const kDarkGreen = Color(0xFF4a7c1f);
+
+  Widget _buildProfileSection(ProfileState state) {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       return const Center(child: Text("Not logged in"));
     }
-    return BlocBuilder<ProfileCubit, ProfileState>(
-      builder: (context, state) {
-        if (state is ProfileLoading) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (state is ProfileError) {
-          return Center(child: Text(state.message));
-        }
-        if (state is ProfileLoaded) {
-          return Column(
-            children: [
-              /// ── Purple header with blurred background + avatar ──
-              _ProfileHeader(state: state),
-
-              /// ── Scrollable info fields below ──
-              Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 8,
-                  ),
-                  children: [
-                    const SizedBox(height: 12),
-                    _ProfileInfoTile(label: "Name", value: state.name),
-                    _ProfileInfoTile(label: "Email", value: state.email),
-                    _ProfileInfoTile(label: "Password", value: "••••••••"),
-                    _ProfileInfoTile(
-                      label: "User ID",
-                      value: user.uid.substring(0, 8),
-                    ),
-                    // Add more fields as needed
-                    const SizedBox(height: 24),
-                    _LogoutButton(),
-                  ],
-                ),
+    // if (sate is) {}
+    return Column(
+      children: [
+        if (state is ProfileLoading) ...{CircularProgressIndicator()},
+        if (state is ProfileError) ...{Text(state.message)},
+        if (state is ProfileLoaded) ...{
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: _ProfileHeroCard(state: state),
+          ),
+          const SizedBox(height: 16),
+          Expanded(
+            child: AnimatedBottomContent(
+              contentKey: const ValueKey("profile_sheet"),
+              child: BlocBuilder<ProfileCubit, ProfileState>(
+                builder: (context, innerState) {
+                  if (innerState is ProfileLoading) {
+                    return const Center(
+                      child: CircularProgressIndicator(color: kPurple),
+                    );
+                  }
+                  if (innerState is ProfileError) {
+                    print(innerState.message);
+                    return Center(
+                      child: Text(
+                        innerState.message,
+                        style: const TextStyle(color: Colors.red),
+                      ),
+                    );
+                  }
+                  if (innerState is ProfileLoaded) {
+                    return _ProfileSheetContent(
+                      state: innerState,
+                      uid: user.uid,
+                    );
+                  }
+                  return const SizedBox();
+                },
               ),
-            ],
-          );
-        }
-        return const SizedBox();
-      },
+            ),
+          ),
+        },
+      ],
     );
+
+    // return BlocBuilder<ProfileCubit, ProfileState>(
+    //   builder: (context, state) {
+    //     if (state is ProfileLoading) {
+    //       return const Center(child: CircularProgressIndicator(color: kPurple));
+    //     }
+    //     if (state is ProfileError) {
+    //       return Center(child: Text(state.message));
+    //     }
+    //     if (state is ProfileLoaded) {
+    //       return Column(
+    //         children: [
+    //           // ── Top bar ──────────────────────────────────────────
+    //           // _buildTopBar(context, state.name),
+
+    //           // ── Purple hero card ─────────────────────────────────
+    //           Padding(
+    //             padding: const EdgeInsets.symmetric(horizontal: 16),
+    //             child: _ProfileHeroCard(state: state),
+    //           ),
+
+    //           const SizedBox(height: 16),
+
+    //           // ── AnimatedBottomContent ─────────────────────────────
+    //           Expanded(
+    //             child: AnimatedBottomContent(
+    //               contentKey: const ValueKey("profile_sheet"),
+    //               child: BlocBuilder<ProfileCubit, ProfileState>(
+    //                 builder: (context, innerState) {
+    //                   if (innerState is ProfileLoading) {
+    //                     return const Center(
+    //                       child: CircularProgressIndicator(color: kPurple),
+    //                     );
+    //                   }
+    //                   if (innerState is ProfileError) {
+    //                     print(innerState.message);
+    //                     return Center(
+    //                       child: Text(
+    //                         innerState.message,
+    //                         style: const TextStyle(color: Colors.red),
+    //                       ),
+    //                     );
+    //                   }
+    //                   if (innerState is ProfileLoaded) {
+    //                     return _ProfileSheetContent(
+    //                       state: innerState,
+    //                       uid: user.uid,
+    //                     );
+    //                   }
+    //                   return const SizedBox();
+    //                 },
+    //               ),
+    //             ),
+    //           ),
+    //         ],
+    //       );
+    //     }
+    //     return const SizedBox();
+    //   },
+    // );
   }
+
+  // Widget _buildTopBar(BuildContext context, String name) {
+  //   return Padding(
+  //     padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
+  //     child: Row(
+  //       children: [
+  //         // Hamburger — dark green circle
+  //         Container(
+  //           width: 38,
+  //           height: 38,
+  //           decoration: const BoxDecoration(
+  //             color: kDarkGreen,
+  //             shape: BoxShape.circle,
+  //           ),
+  //           child: Column(
+  //             mainAxisAlignment: MainAxisAlignment.center,
+  //             children: List.generate(
+  //               3,
+  //               (_) => Container(
+  //                 width: 16,
+  //                 height: 2,
+  //                 margin: const EdgeInsets.symmetric(vertical: 2),
+  //                 decoration: BoxDecoration(
+  //                   color: Colors.white,
+  //                   borderRadius: BorderRadius.circular(2),
+  //                 ),
+  //               ),
+  //             ),
+  //           ),
+  //         ),
+  //         Expanded(
+  //           child: Text(
+  //             "Hi, $name",
+  //             textAlign: TextAlign.center,
+  //             style: const TextStyle(
+  //               fontSize: 16,
+  //               fontWeight: FontWeight.w700,
+  //               color: Color(0xFF1A1A1A),
+  //             ),
+  //           ),
+  //         ),
+  //         // Edit / settings icon
+  //         Container(
+  //           width: 38,
+  //           height: 38,
+  //           decoration: BoxDecoration(
+  //             color: Colors.white.withOpacity(0.5),
+  //             shape: BoxShape.circle,
+  //           ),
+  //           child: const Icon(
+  //             Icons.edit_outlined,
+  //             size: 18,
+  //             color: Colors.black87,
+  //           ),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   // Widget _buildProfileSection() {
   //   final user = FirebaseAuth.instance.currentUser;
@@ -814,98 +944,37 @@ class _BouncingArrowState extends State<BouncingArrow>
   }
 }
 
-/// ── Header widget ──────────────────────────────────────────────
-class _ProfileHeader extends StatelessWidget {
+// ── _ProfileHeroCard ───────────────────────────────────────────────────────
+
+class _ProfileHeroCard extends StatelessWidget {
   final ProfileLoaded state;
-  const _ProfileHeader({required this.state});
+  const _ProfileHeroCard({required this.state});
 
   @override
   Widget build(BuildContext context) {
-    const purple = Color(0xFF7B2FBE);
-
-    return SizedBox(
-      height: 220,
-      child: Stack(
-        clipBehavior: Clip.none,
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color.fromARGB(255, 79, 127, 47),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      padding: const EdgeInsets.fromLTRB(20, 22, 20, 20),
+      child: Column(
         children: [
-          /// Purple gradient background
-          Container(
-            height: 170,
-            width: double.infinity,
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [Color(0xFF7B2FBE), Color(0xFF9B4DD4)],
-              ),
-            ),
-
-            /// Optional: blurred profile image as bg overlay
-            child: (state.photoUrl != null && state.photoUrl!.isNotEmpty)
-                ? Opacity(
-                    opacity: 0.25,
-                    child: Image.network(
-                      state.photoUrl!,
-                      fit: BoxFit.cover,
-                      width: double.infinity,
-                    ),
-                  )
-                : null,
-          ),
-
-          /// Name + location centered below avatar
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: Column(
-              children: [
-                const SizedBox(height: 52), // space for avatar
-                Text(
-                  state.name.toUpperCase(),
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  "NEW YORK", // replace with state.location if available
-                  style: TextStyle(
-                    fontSize: 11,
-                    letterSpacing: 2,
-                    color: Colors.grey.shade500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          /// Avatar circle — centered, overlapping the header
-          Positioned(
-            bottom: 40,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: Stack(
+          // ── Avatar row ─────────────────────────────────────────
+          Row(
+            children: [
+              // Avatar with camera button
+              Stack(
                 clipBehavior: Clip.none,
                 children: [
                   Container(
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(color: Colors.white, width: 3),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.15),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
                     ),
                     child: CircleAvatar(
-                      radius: 50,
-                      backgroundColor: purple,
+                      radius: 36,
+                      backgroundColor: const Color.fromARGB(255, 79, 127, 47),
                       backgroundImage:
                           (state.photoUrl != null && state.photoUrl!.isNotEmpty)
                           ? NetworkImage(
@@ -918,7 +987,7 @@ class _ProfileHeader extends StatelessWidget {
                                   ? state.name[0].toUpperCase()
                                   : "?",
                               style: const TextStyle(
-                                fontSize: 36,
+                                fontSize: 28,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
                               ),
@@ -926,37 +995,103 @@ class _ProfileHeader extends StatelessWidget {
                           : null,
                     ),
                   ),
-
-                  /// Camera button bottom-right of avatar
+                  // Camera button — green with purple icon
                   Positioned(
                     bottom: 0,
-                    right: -4,
+                    right: -2,
                     child: GestureDetector(
                       onTap: () =>
                           context.read<ProfileCubit>().pickAndUploadImage(),
                       child: Container(
-                        width: 30,
-                        height: 30,
+                        width: 26,
+                        height: 26,
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: const Color(0xFFB5D96A),
                           shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.12),
-                              blurRadius: 6,
-                            ),
-                          ],
+                          border: Border.all(
+                            color: const Color.fromARGB(255, 79, 127, 47),
+                            width: 2,
+                          ),
                         ),
                         child: const Icon(
                           Icons.camera_alt_rounded,
-                          size: 16,
-                          color: Color(0xFF7B2FBE),
+                          size: 13,
+                          color: Color.fromARGB(255, 79, 127, 47),
                         ),
                       ),
                     ),
                   ),
                 ],
               ),
+
+              const SizedBox(width: 14),
+
+              // Name, location, email pill
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      state.name,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        letterSpacing: .5,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    const Text(
+                      "NEW YORK", // replace with state.location
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: Colors.white70,
+                        letterSpacing: 2,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    // Email pill
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.18),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        state.email,
+                        style: const TextStyle(
+                          fontSize: 10,
+                          color: Colors.white,
+                          letterSpacing: .3,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          // ── Divider ────────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: Divider(color: Colors.white.withOpacity(0.2), height: 1),
+          ),
+
+          // ── Stats row ──────────────────────────────────────────
+          IntrinsicHeight(
+            child: Row(
+              children: [
+                _StatItem(value: "221", label: "MESSAGES"),
+                _VerticalDivider(),
+                _StatItem(value: "48", label: "CONTACTS"),
+                _VerticalDivider(),
+                _StatItem(value: "5", label: "GROUPS"),
+              ],
             ),
           ),
         ],
@@ -965,61 +1100,139 @@ class _ProfileHeader extends StatelessWidget {
   }
 }
 
-/// ── Single info row ────────────────────────────────────────────
-class _ProfileInfoTile extends StatelessWidget {
+class _StatItem extends StatelessWidget {
+  final String value;
+  final String label;
+  const _StatItem({required this.value, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Column(
+        children: [
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 9,
+              color: Colors.white60,
+              letterSpacing: .5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _VerticalDivider extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(width: 1, color: Colors.white.withOpacity(0.2));
+  }
+}
+
+// ── _ProfileSheetContent (goes inside AnimatedBottomContent) ──────────────
+
+class _ProfileSheetContent extends StatelessWidget {
+  final ProfileLoaded state;
+  final String uid;
+  const _ProfileSheetContent({required this.state, required this.uid});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+      children: [
+        // Drag handle
+        Center(
+          child: Container(
+            width: 36,
+            height: 4,
+            margin: const EdgeInsets.only(top: 10, bottom: 20),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade300,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+        ),
+
+        _ProfileField(label: "NAME", value: state.name),
+        _ProfileField(label: "EMAIL", value: state.email),
+        _ProfileField(label: "PASSWORD", value: "••••••••"),
+        _ProfileField(label: "USER ID", value: uid.substring(0, 8)),
+
+        const SizedBox(height: 24),
+
+        // Logout button
+        SizedBox(
+          width: double.infinity,
+          height: 50,
+          child: OutlinedButton(
+            onPressed: () {
+              // logout logic
+            },
+            style: OutlinedButton.styleFrom(
+              foregroundColor: const Color(0xFF7B2FBE),
+              side: const BorderSide(color: Color(0xFF7B2FBE), width: 1.5),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+            ),
+            child: const Text(
+              "Logout",
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF7B2FBE),
+              ),
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 20),
+      ],
+    );
+  }
+}
+// ── _ProfileField ──────────────────────────────────────────────────────────
+
+class _ProfileField extends StatelessWidget {
   final String label;
   final String value;
-  const _ProfileInfoTile({required this.label, required this.value});
+  const _ProfileField({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 16),
         Text(
           label,
           style: const TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
             color: Color(0xFF7B2FBE),
+            letterSpacing: .8,
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 6),
         Text(
           value,
-          style: const TextStyle(fontSize: 15, color: Colors.black87),
+          style: const TextStyle(fontSize: 15, color: Color(0xFF1A1A1A)),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 14),
         Divider(height: 1, color: Colors.grey.shade200),
+        const SizedBox(height: 4),
       ],
-    );
-  }
-}
-
-/// ── Logout button ──────────────────────────────────────────────
-class _LogoutButton extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: OutlinedButton(
-        onPressed: () {
-          // your logout logic
-        },
-        style: OutlinedButton.styleFrom(
-          foregroundColor: const Color(0xFF7B2FBE),
-          side: const BorderSide(color: Color(0xFF7B2FBE)),
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-        child: const Text(
-          "Logout",
-          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
-        ),
-      ),
     );
   }
 }
