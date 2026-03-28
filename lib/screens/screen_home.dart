@@ -618,18 +618,16 @@ class ScreenHome extends StatelessWidget {
       return const Center(child: Text("Not logged in"));
     }
 
-    final testState = ProfileLoading();
-
     // if (sate is) {}
     return Column(
       children: [
         // SizedBox(height: 30),
-        _buildTopSection(testState),
+        _buildTopSection(state),
         const SizedBox(height: 16),
         Expanded(
           child: AnimatedBottomContent(
             contentKey: const ValueKey("profile_sheet"),
-            child: _buildBottomSection(testState, user.uid),
+            child: _buildBottomSection(state, user.uid),
           ),
         ),
       ],

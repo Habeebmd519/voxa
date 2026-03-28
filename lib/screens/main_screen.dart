@@ -18,6 +18,7 @@ import 'package:voxa/feature/task/top_toggle_system/cubit/cubit.dart';
 import 'package:voxa/feature/task/top_toggle_system/enum.dart';
 import 'package:voxa/feature/user/bloc/UserCubit.dart';
 import 'package:voxa/feature/user/screen/chat_screen.dart';
+import 'package:voxa/screens/profile_Screen.dart';
 import 'package:voxa/screens/screen_home.dart';
 // import 'package:voxa/screens/screen_login.dart';
 import 'package:crystal_navigation_bar/crystal_navigation_bar.dart';
@@ -106,10 +107,14 @@ class _MainScreenState extends State<MainScreen> {
                     color: Colors.white.withOpacity(0.5),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
-                    Icons.edit,
-                    size: 18,
-                    color: Colors.black87,
+                  child: IconButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => ProfileScreen()),
+                      );
+                    },
+                    icon: Icon(Icons.edit, size: 18, color: Colors.black87),
                   ),
                 ),
               },
