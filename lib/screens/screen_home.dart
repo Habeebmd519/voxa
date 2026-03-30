@@ -23,7 +23,9 @@ import 'package:voxa/feature/task/top_toggle_system/cubit/cubit.dart';
 import 'package:voxa/feature/task/top_toggle_system/enum.dart';
 import 'package:voxa/feature/user/bloc/UserCubit.dart';
 import 'package:voxa/feature/user/bloc/UserState.dart';
+import 'package:voxa/feature/user/screen/chat_behind_screen.dart';
 import 'package:voxa/feature/user/screen/chat_screen.dart';
+import 'package:voxa/feature/user/widget/chat_hedear.dart';
 
 class ScreenHome extends StatelessWidget {
   const ScreenHome({super.key});
@@ -567,39 +569,44 @@ class ScreenHome extends StatelessWidget {
       }
     }
 
-    return Column(
+    return Stack(
       children: [
-        AnimatedContainer(
-          curve: Curves.easeInCubic,
-          duration: Duration(milliseconds: 300),
-          width: double.infinity,
-          height: getHeight(context, SheetState),
-          color: Colors.transparent,
-        ),
+        /// 🔥 BACKGROUND → PROFILE SHOWCASE
+        ChatProfileBackground(user: state.user),
 
-        // Center(
-        //   child: Text("v", style: TextStyle(fontWeight: FontWeight.bold)),
-        // ),
-        if (SheetState.selectedSheet == Chatsheetmanage.zero)
-          Expanded(
-            child: Center(
-              child: InkWell(
-                onTap: () {
-                  context.read<ChatsheetmanageCubit>().changeSheet(
-                    Chatsheetmanage.full,
-                  );
-                },
-                child: const BouncingArrow(),
+        /// 🔥 FOREGROUND → CHAT SHEET SYSTEM
+        Column(
+          children: [
+            AnimatedContainer(
+              duration: Duration(milliseconds: 300),
+              height: getHeight(context, SheetState),
+            ),
+
+            if (SheetState.selectedSheet == Chatsheetmanage.zero)
+              Expanded(
+                child: Center(
+                  child: InkWell(
+                    onTap: () {
+                      context.read<ChatsheetmanageCubit>().changeSheet(
+                        Chatsheetmanage.full,
+                      );
+                    },
+                    child: const BouncingArrow(),
+                  ),
+                ),
               ),
-            ),
-          ),
-        if (SheetState.selectedSheet != Chatsheetmanage.zero)
-          Expanded(
-            child: AnimatedBottomContent(
-              contentKey: const ValueKey("chat_sheet"),
-              child: ChatScreen(receiverUser: state.user),
-            ),
-          ),
+
+            if (SheetState.selectedSheet != Chatsheetmanage.zero) ...{
+              ChatHeader(user: state.user),
+              Expanded(
+                child: AnimatedBottomContent(
+                  contentKey: const ValueKey("chat_sheet"),
+                  child: ChatScreen(receiverUser: state.user),
+                ),
+              ),
+            },
+          ],
+        ),
       ],
     );
   }
