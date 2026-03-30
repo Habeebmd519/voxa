@@ -17,6 +17,7 @@ import 'package:voxa/core/presence/online_status_cubit.dart';
 import 'package:voxa/feature/auth/presentation/cubits/premuim_button_cubit/premium_button_cubit.dart';
 import 'package:voxa/feature/chat/Repositories/chat_repository/chat_repository.dart';
 import 'package:voxa/feature/chat/chat_cubit/chat_cubit.dart';
+import 'package:voxa/feature/profile/screens/cubit/edit_cubit.dart';
 
 import 'package:voxa/feature/task/bottomSheet/cubit/sheet_cubit.dart';
 import 'package:voxa/feature/task/chatSheetManagemnt/chatSheetManage.dart';
@@ -56,6 +57,7 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (_) => TermsBloc()),
         BlocProvider(create: (_) => PremiumButtonCubit()),
         BlocProvider(create: (_) => TopBarCubit()),
+        BlocProvider(create: (_) => EditCubit()),
         BlocProvider(
           create: (_) => UserCubit(
             UserRepository(

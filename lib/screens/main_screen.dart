@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:voxa/core/navigation/home_nav_controller.dart';
 import 'package:voxa/core/widgets/bottom_content.dart';
 import 'package:voxa/feature/auth/data/services/auth_service.dart';
+import 'package:voxa/feature/profile/screens/cubit/edit_cubit.dart';
 import 'package:voxa/feature/task/bottomSheet/cubit/sheet_cubit.dart';
 import 'package:voxa/feature/task/bottomSheet/cubit/sheet_state.dart';
 import 'package:voxa/feature/task/chatSheetManagemnt/chatSheetManage.dart';
@@ -36,13 +37,13 @@ class _MainScreenState extends State<MainScreen> {
   AuthService authService = AuthService();
 
   final _page = [ScreenHome(), ScreenHome(), ScreenHome(), ScreenHome()];
-  bool isEditing = false;
+  // bool isEditing = false;
 
-  late TextEditingController nameCtrl;
-  late TextEditingController placeCtrl;
-  late TextEditingController domainCtrl;
+  // late TextEditingController nameCtrl;
+  // late TextEditingController placeCtrl;
+  // late TextEditingController domainCtrl;
 
-  bool _initialized = false;
+  // bool _initialized = false;
   @override
   void initState() {
     super.initState();
@@ -50,6 +51,7 @@ class _MainScreenState extends State<MainScreen> {
     FirebaseAuth.instance.authStateChanges().listen((user) {
       if (user != null) {
         context.read<UserCubit>().listenUsers();
+        context.read<ProfileCubit>().loadProfile();
       }
     });
   }
@@ -70,9 +72,10 @@ class _MainScreenState extends State<MainScreen> {
         );
 
         // Navigate after logout
-        Navigator.push(
+        Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (_) => AnimatedLoginScreen()),
+          (route) => false,
         );
       } catch (e) {
         if (!context.mounted) return;
@@ -116,13 +119,23 @@ class _MainScreenState extends State<MainScreen> {
                   ),
                   child: IconButton(
                     onPressed: () {
-                      // Navigator.push(
-                      //   context,
-                      //   MaterialPageRoute(builder: (_) => ProfileScreen()),
-                      // );
-                      isEditing = true;
+                      // final isEditing = context.read<EditCubit>().state;
+
+                      // if (isEditing) {
+                      //   // 🔥 trigger save
+                      //   context.read<ProfileCubit>().updateProfileFromFields();
+                      // }
+
+                      context.read<EditCubit>().toggle();
                     },
-                    icon: Icon(isEditing ? Icons.check : Icons.edit),
+                    icon: BlocBuilder<EditCubit, bool>(
+                      builder: (context, isEditing) {
+                        return Icon(
+                          isEditing ? Icons.check : Icons.edit,
+                          color: Colors.white,
+                        );
+                      },
+                    ),
                     color: Colors.white,
                   ),
                 ),

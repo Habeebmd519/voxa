@@ -619,13 +619,9 @@ class ScreenHome extends StatelessWidget {
     if (user == null) {
       return const Center(child: Text("Not logged in"));
     }
-    bool isEditing = false;
-    late UserModel editableUser;
-    late TextEditingController nameCtrl;
-    late TextEditingController placeCtrl;
-    late TextEditingController domainCtrl;
 
     // if (sate is) {}
+
     return Column(
       children: [
         // SizedBox(height: 30),
@@ -634,7 +630,7 @@ class ScreenHome extends StatelessWidget {
         Expanded(
           child: AnimatedBottomContent(
             contentKey: const ValueKey("profile_sheet"),
-            child: ProfileScreen(state: state, uid: user.uid, isEditing: true),
+            child: ProfileScreen(state: state, uid: user.uid),
           ),
         ),
       ],
@@ -837,8 +833,11 @@ class _ProfileHeroCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 2),
-                    const Text(
-                      "NEW YORK", // replace with state.location
+                    Text(
+                      (state.user.place != null && state.user.place!.isNotEmpty)
+                          ? "${state.user.place}"
+                          : "Not Available",
+                      // "NEW YORK", // replace with state.location
                       style: TextStyle(
                         fontSize: 10,
                         color: Colors.white70,
@@ -857,7 +856,10 @@ class _ProfileHeroCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
-                        state.user.email,
+                        (state.user.domain != null &&
+                                state.user.domain!.isNotEmpty)
+                            ? "${state.user.domain}"
+                            : "Not Available",
                         style: const TextStyle(
                           fontSize: 10,
                           color: Colors.white,

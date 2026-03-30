@@ -22,6 +22,7 @@ class UserModel {
   ////
   final Map<String, int> unreadCount; // key = otherUserId, value = unread count
   final String? lastSenderId;
+
   UserModel({
     required this.uid,
     required this.email,
@@ -71,6 +72,8 @@ class UserModel {
       place: map['place'],
       domain: map['domain'],
       projects: List<Map<String, dynamic>>.from(map['projects'] ?? []),
+
+      //
     );
   }
 

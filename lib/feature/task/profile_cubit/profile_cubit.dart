@@ -152,4 +152,38 @@ class ProfileCubit extends Cubit<ProfileState> {
       return false;
     }
   }
+
+  Future<void> updateProfileFromFields({
+    required String name,
+    String? place,
+    String? domain,
+    String? role,
+  }) async {
+    if (user == null) return;
+
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user!.uid)
+          .get();
+
+      final currentUser = UserModel.fromMap(doc.data()!);
+
+      final updatedUser = currentUser.copyWith(
+        name: name,
+        place: place,
+        domain: domain,
+        role: role,
+      );
+
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user!.uid)
+          .update(updatedUser.toMap());
+
+      emit(ProfileLoaded(user: updatedUser));
+    } catch (e) {
+      emit(ProfileError(e.toString()));
+    }
+  }
 }
