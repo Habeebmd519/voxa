@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 // import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:voxa/feature/auth/data/model/user_model.dart';
 import 'package:voxa/feature/task/profile_cubit/prifile_state.dart';
 
 class ProfileCubit extends Cubit<ProfileState> {
@@ -26,17 +27,27 @@ class ProfileCubit extends Cubit<ProfileState> {
 
       final data = doc.data();
 
-      emit(
-        ProfileLoaded(
-          name: data?['name'] ?? '',
-          email: data?['email'] ?? '',
-          photoUrl: data?['photoUrl'],
-        ),
-      );
+      emit(ProfileLoaded(user: UserModel.fromMap(data!)));
     } catch (e) {
       emit(ProfileError(e.toString()));
     }
   }
+
+  Future<void> updateProfile(UserModel updatedUser) async {
+    if (user == null) return;
+
+    try {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user!.uid)
+          .update(updatedUser.toMap());
+
+      emit(ProfileLoaded(user: updatedUser));
+    } catch (e) {
+      emit(ProfileError(e.toString()));
+    }
+  }
+  ////
 
   Future<File?> compressImage(File file) async {
     final targetPath =

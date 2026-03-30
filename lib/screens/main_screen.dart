@@ -36,6 +36,13 @@ class _MainScreenState extends State<MainScreen> {
   AuthService authService = AuthService();
 
   final _page = [ScreenHome(), ScreenHome(), ScreenHome(), ScreenHome()];
+  bool isEditing = false;
+
+  late TextEditingController nameCtrl;
+  late TextEditingController placeCtrl;
+  late TextEditingController domainCtrl;
+
+  bool _initialized = false;
   @override
   void initState() {
     super.initState();
@@ -109,12 +116,14 @@ class _MainScreenState extends State<MainScreen> {
                   ),
                   child: IconButton(
                     onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => ProfileScreen()),
-                      );
+                      // Navigator.push(
+                      //   context,
+                      //   MaterialPageRoute(builder: (_) => ProfileScreen()),
+                      // );
+                      isEditing = true;
                     },
-                    icon: Icon(Icons.edit, size: 18, color: Colors.black87),
+                    icon: Icon(isEditing ? Icons.check : Icons.edit),
+                    color: Colors.white,
                   ),
                 ),
               },

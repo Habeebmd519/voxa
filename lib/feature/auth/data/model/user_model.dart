@@ -13,6 +13,12 @@ class UserModel {
   final DateTime? lastSeen;
   final String? lastMessage;
 
+  //
+  final String? role;
+  final String? place;
+  final String? domain;
+  final List<Map<String, dynamic>> projects;
+
   ////
   final Map<String, int> unreadCount; // key = otherUserId, value = unread count
   final String? lastSenderId;
@@ -28,6 +34,11 @@ class UserModel {
     this.lastSenderId,
     this.lastMessage,
     this.unreadCount = const {},
+    //
+    this.role,
+    this.place,
+    this.domain,
+    this.projects = const [],
   });
 
   /// FROM FIRESTORE
@@ -55,6 +66,11 @@ class UserModel {
         ),
       ),
       lastMessage: map['lastMessage'],
+      //
+      role: map['role'],
+      place: map['place'],
+      domain: map['domain'],
+      projects: List<Map<String, dynamic>>.from(map['projects'] ?? []),
     );
   }
 
@@ -76,6 +92,11 @@ class UserModel {
       'unreadCount': unreadCount,
       'lastSenderId': lastSenderId,
       'lastMessage': lastMessage,
+      //
+      'role': role,
+      'place': place,
+      'domain': domain,
+      'projects': projects,
     };
   }
 
@@ -92,6 +113,11 @@ class UserModel {
     Map<String, int>? unreadCount, // use nullable, not `= 0`
     String? lastSenderId,
     String? lastMessage,
+    //
+    String? role,
+    String? place,
+    String? domain,
+    List<Map<String, dynamic>>? projects,
   }) {
     return UserModel(
       uid: uid ?? this.uid,
@@ -105,6 +131,11 @@ class UserModel {
       unreadCount: unreadCount ?? this.unreadCount,
       lastSenderId: lastSenderId ?? this.lastSenderId, // fixed
       lastMessage: lastMessage ?? this.lastMessage,
+      //
+      role: role ?? this.role,
+      place: place ?? this.place,
+      domain: domain ?? this.domain,
+      projects: projects ?? this.projects,
     );
   }
 }
