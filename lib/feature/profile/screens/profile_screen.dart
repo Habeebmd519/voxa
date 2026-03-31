@@ -22,6 +22,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   late UserModel editableUser;
   late TextEditingController nameCtrl;
   late TextEditingController placeCtrl;
+  late TextEditingController expCtrl;
   late TextEditingController domainCtrl;
   late StreamSubscription editSub;
   String? selectedRole;
@@ -37,6 +38,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       nameCtrl = TextEditingController(text: user.name);
       placeCtrl = TextEditingController(text: user.place ?? "");
+      expCtrl = TextEditingController(text: user.exp ?? "");
       domainCtrl = TextEditingController(text: user.domain ?? "");
       selectedRole = user.role;
       projectItems = user.projects.map((p) {
@@ -68,6 +70,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final updatedUser = editableUser.copyWith(
       name: nameCtrl.text,
       place: placeCtrl.text,
+      exp: expCtrl.text,
       domain: domainCtrl.text,
       role: selectedRole,
       projects: projects, // ✅ FINAL SAVE
@@ -151,6 +154,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             uid: uid,
             nameCtrl: nameCtrl,
             placeCtrl: placeCtrl,
+            expCtrl: expCtrl,
             domainCtrl: domainCtrl,
             isEditing: isEditing,
             selectedRole: selectedRole,
@@ -177,6 +181,7 @@ class _ProfileSheetContent extends StatelessWidget {
 
   final TextEditingController nameCtrl;
   final TextEditingController placeCtrl;
+  final TextEditingController expCtrl;
   final TextEditingController domainCtrl;
   final bool isEditing;
   final String? selectedRole;
@@ -191,6 +196,7 @@ class _ProfileSheetContent extends StatelessWidget {
     required this.uid,
     required this.nameCtrl,
     required this.placeCtrl,
+    required this.expCtrl,
     required this.domainCtrl,
     required this.isEditing,
     required this.onRoleChanged,
@@ -261,6 +267,13 @@ class _ProfileSheetContent extends StatelessWidget {
           controller: domainCtrl,
           editing: isEditing,
           icon: Icons.language,
+        ),
+        const SizedBox(height: 12),
+        _ProfileField(
+          label: "EXPRIANCE",
+          controller: expCtrl,
+          editing: isEditing,
+          icon: Icons.location_on,
         ),
         const SizedBox(height: 12),
         _ProfileField(

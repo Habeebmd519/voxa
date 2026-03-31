@@ -16,6 +16,7 @@ class UserModel {
   //
   final String? role;
   final String? place;
+  final String? exp;
   final String? domain;
   final List<Map<String, dynamic>> projects;
 
@@ -38,6 +39,7 @@ class UserModel {
     //
     this.role,
     this.place,
+    this.exp,
     this.domain,
     this.projects = const [],
   });
@@ -70,10 +72,11 @@ class UserModel {
       //
       role: map['role'],
       place: map['place'],
+      exp: map['exp'],
       domain: map['domain'],
       projects: List<Map<String, dynamic>>.from(map['projects'] ?? []),
 
-      //
+      //¯¸
     );
   }
 
@@ -98,6 +101,7 @@ class UserModel {
       //
       'role': role,
       'place': place,
+      'exp': exp,
       'domain': domain,
       'projects': projects,
     };
@@ -119,6 +123,7 @@ class UserModel {
     //
     String? role,
     String? place,
+    String? exp,
     String? domain,
     List<Map<String, dynamic>>? projects,
   }) {
@@ -137,6 +142,7 @@ class UserModel {
       //
       role: role ?? this.role,
       place: place ?? this.place,
+      exp: exp ?? this.exp,
       domain: domain ?? this.domain,
       projects: projects ?? this.projects,
     );

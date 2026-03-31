@@ -597,7 +597,6 @@ class ScreenHome extends StatelessWidget {
               ),
 
             if (SheetState.selectedSheet != Chatsheetmanage.zero) ...{
-              ChatHeader(user: state.user),
               Expanded(
                 child: AnimatedBottomContent(
                   contentKey: const ValueKey("chat_sheet"),

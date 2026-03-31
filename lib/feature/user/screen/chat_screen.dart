@@ -13,6 +13,7 @@ import 'package:voxa/feature/task/chatSheetManagemnt/chatSheetManage.dart';
 import 'package:voxa/feature/task/chatSheetManagemnt/chatSheetMangemetState.dart';
 import 'package:voxa/feature/auth/data/model/user_model.dart';
 import 'package:voxa/feature/user/bloc/UserCubit.dart';
+import 'package:voxa/feature/user/widget/chat_hedear.dart';
 
 import '../utils/chat_utils.dart';
 
@@ -82,6 +83,7 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
             child: Column(
               children: [
+                ChatHeader(user: widget.receiverUser),
                 Expanded(
                   child: StreamBuilder<DocumentSnapshot>(
                     stream: firestore
