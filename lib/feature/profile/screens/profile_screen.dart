@@ -33,27 +33,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void initState() {
     super.initState();
 
+    nameCtrl = TextEditingController();
+    placeCtrl = TextEditingController();
+    expCtrl = TextEditingController();
+    domainCtrl = TextEditingController();
+    emailCtrl = TextEditingController();
+    uidCtrl = TextEditingController();
+
     if (widget.state is ProfileLoaded) {
       final user = (widget.state as ProfileLoaded).user;
 
       editableUser = user;
 
-      nameCtrl = TextEditingController(text: user.name);
-      placeCtrl = TextEditingController(text: user.place ?? "");
-      expCtrl = TextEditingController(text: user.exp ?? "");
-      domainCtrl = TextEditingController(text: user.domain ?? "");
-      emailCtrl = TextEditingController(text: user.email);
-      uidCtrl = TextEditingController(text: user.uid);
+      nameCtrl.text = user.name;
+      placeCtrl.text = user.place ?? "";
+      expCtrl.text = user.exp ?? "";
+      domainCtrl.text = user.domain ?? "";
+      emailCtrl.text = user.email;
+      uidCtrl.text = user.uid;
+
       selectedRole = user.role;
+
       projectItems = user.projects.map((p) {
-        return ProjectItem.filled(p['name'] ?? '', p['desc'] ?? '');
+        return ProjectItem.filled(p);
       }).toList();
     }
 
     editSub = context.read<EditCubit>().stream.listen((isEditing) {
-      if (!isEditing) {
-        saveProfile();
-      }
+      if (!isEditing) saveProfile();
     });
   }
 
@@ -73,7 +80,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   void saveProfile() {
     final projects = projectItems.map((p) {
-      return {"name": p.nameCtrl.text, "desc": p.descCtrl.text};
+      return {
+        "name": p.nameCtrl.text,
+        "desc": p.descCtrl.text,
+        "link": p.linkCtrl.text,
+        "tech": p.techCtrl.text
+            .split(',')
+            .map((e) => e.trim())
+            .where((e) => e.isNotEmpty)
+            .toList(),
+      };
     }).toList();
 
     final updatedUser = editableUser.copyWith(
@@ -376,6 +392,23 @@ class _ProfileSheetContent extends StatelessWidget {
                     enabled: isEditing,
                     decoration: const InputDecoration(
                       hintText: "Description",
+                      border: InputBorder.none,
+                    ),
+                  ),
+                  TextField(
+                    controller: project.linkCtrl,
+                    enabled: isEditing,
+                    decoration: const InputDecoration(
+                      hintText: "GitHub / Link",
+                      border: InputBorder.none,
+                    ),
+                  ),
+
+                  TextField(
+                    controller: project.techCtrl,
+                    enabled: isEditing,
+                    decoration: const InputDecoration(
+                      hintText: "Tech (Flutter, Firebase)",
                       border: InputBorder.none,
                     ),
                   ),
@@ -745,17 +778,27 @@ const kRoles = ['Developer', 'Designer', 'Business', 'Student', 'Other'];
 class ProjectItem {
   final TextEditingController nameCtrl;
   final TextEditingController descCtrl;
+  final TextEditingController linkCtrl;
+  final TextEditingController techCtrl; // comma separated for now
 
   ProjectItem()
     : nameCtrl = TextEditingController(),
-      descCtrl = TextEditingController();
+      descCtrl = TextEditingController(),
+      linkCtrl = TextEditingController(),
+      techCtrl = TextEditingController();
 
-  ProjectItem.filled(String name, String desc)
-    : nameCtrl = TextEditingController(text: name),
-      descCtrl = TextEditingController(text: desc);
+  ProjectItem.filled(Map<String, dynamic> data)
+    : nameCtrl = TextEditingController(text: data['name'] ?? ''),
+      descCtrl = TextEditingController(text: data['desc'] ?? ''),
+      linkCtrl = TextEditingController(text: data['link'] ?? ''),
+      techCtrl = TextEditingController(
+        text: (data['tech'] as List?)?.join(', ') ?? '',
+      );
 
   void dispose() {
     nameCtrl.dispose();
     descCtrl.dispose();
+    linkCtrl.dispose();
+    techCtrl.dispose();
   }
 }

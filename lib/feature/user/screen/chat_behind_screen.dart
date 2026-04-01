@@ -23,152 +23,179 @@ class _ChatProfileBackgroundState extends State<ChatProfileBackground> {
         ),
       ),
       child: SafeArea(
-        child: Column(
-          children: [
-            const SizedBox(height: 30),
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              const SizedBox(height: 30),
 
-            /// 🔥 PROFILE + RING
-            Stack(
-              alignment: Alignment.center,
-              children: [
-                /// OUTER RING
-                Container(
-                  width: 120,
-                  height: 120,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: Colors.white.withOpacity(0.3),
-                      width: 3,
+              /// 🔥 PROFILE + RING
+              Stack(
+                alignment: Alignment.center,
+                children: [
+                  /// OUTER RING
+                  Container(
+                    width: 120,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.3),
+                        width: 3,
+                      ),
                     ),
                   ),
-                ),
 
-                /// INNER RING (progress feel)
-                Container(
-                  width: 100,
-                  height: 100,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 2),
-                  ),
-                ),
-
-                /// AVATAR
-                CircleAvatar(
-                  radius: 42,
-                  backgroundColor: Colors.white,
-                  backgroundImage:
-                      widget.user.photoUrl != null &&
-                          widget.user.photoUrl!.isNotEmpty
-                      ? NetworkImage(widget.user.photoUrl!)
-                      : null,
-                  child:
-                      widget.user.photoUrl == null ||
-                          widget.user.photoUrl!.isEmpty
-                      ? Text(
-                          widget.user.name[0].toUpperCase(),
-                          style: const TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        )
-                      : null,
-                ),
-
-                /// ONLINE DOT
-                Positioned(
-                  bottom: 10,
-                  right: 10,
-                  child: Container(
-                    width: 14,
-                    height: 14,
+                  /// INNER RING (progress feel)
+                  Container(
+                    width: 100,
+                    height: 100,
                     decoration: BoxDecoration(
-                      color: Colors.green,
                       shape: BoxShape.circle,
                       border: Border.all(color: Colors.white, width: 2),
                     ),
                   ),
-                ),
-              ],
-            ),
 
-            const SizedBox(height: 16),
-
-            /// NAME
-            Text(
-              widget.user.name,
-              style: const TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w700,
-                color: Colors.black,
-              ),
-            ),
-
-            const SizedBox(height: 6),
-
-            /// TAGLINE / DOMAIN
-            Text(
-              widget.user.place ?? "Not Available",
-              style: TextStyle(
-                color: Colors.black.withOpacity(0.6),
-                fontSize: 13,
-              ),
-            ),
-
-            const SizedBox(height: 14),
-
-            /// 🔥 SKILL CHIPS
-            Wrap(
-              spacing: 8,
-              children: [
-                _chip(widget.user.domain ?? "Available for collaboration"),
-                _chip(widget.user.role ?? ".."),
-                if (widget.user.exp != null && widget.user.exp!.isNotEmpty)
-                  _chip("${widget.user.exp} yr Experience"),
-              ],
-            ),
-
-            const SizedBox(height: 20),
-
-            /// 🔥 STATS CARD (LIKE YOUR REFERENCE)
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 24),
-              padding: const EdgeInsets.symmetric(vertical: 18),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.5),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _StatItem(
-                    value: widget.user.projects.length.toString(),
-                    label: "Projects",
+                  /// AVATAR
+                  CircleAvatar(
+                    radius: 42,
+                    backgroundColor: Colors.white,
+                    backgroundImage:
+                        widget.user.photoUrl != null &&
+                            widget.user.photoUrl!.isNotEmpty
+                        ? NetworkImage(widget.user.photoUrl!)
+                        : null,
+                    child:
+                        widget.user.photoUrl == null ||
+                            widget.user.photoUrl!.isEmpty
+                        ? Text(
+                            widget.user.name[0].toUpperCase(),
+                            style: const TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          )
+                        : null,
                   ),
-                  _Divider(),
-                  _StatItem(
-                    value: widget.user.rating.toStringAsFixed(1),
-                    label: "Rating",
+
+                  /// ONLINE DOT
+                  Positioned(
+                    bottom: 10,
+                    right: 10,
+                    child: Container(
+                      width: 14,
+                      height: 14,
+                      decoration: BoxDecoration(
+                        color: Colors.green,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2),
+                      ),
+                    ),
                   ),
-                  _Divider(),
-                  _StatItem(value: "${widget.user.exp}", label: "Exp"),
                 ],
               ),
-            ),
 
-            const SizedBox(height: 20),
+              const SizedBox(height: 16),
 
-            /// 🔥 SECTION CARDS (NOT FLAT ANYMORE)
-            _sectionCard(0, Icons.star_border, "Credibility", widget.user),
-            _sectionCard(1, Icons.work_outline, "Work", widget.user),
-            _sectionCard(2, Icons.flash_on, "Response", widget.user),
-            _sectionCard(3, Icons.memory, "Skills", widget.user),
-            // SizedBox(height: 20),r
-          ],
+              /// NAME
+              Text(
+                widget.user.name,
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.black,
+                ),
+              ),
+
+              const SizedBox(height: 6),
+
+              /// TAGLINE / DOMAIN
+              Text(
+                widget.user.place ?? "Not Available",
+                style: TextStyle(
+                  color: Colors.black.withOpacity(0.6),
+                  fontSize: 13,
+                ),
+              ),
+
+              const SizedBox(height: 14),
+
+              /// 🔥 SKILL CHIPS
+              Wrap(
+                spacing: 10,
+                runSpacing: 8,
+                children: getIdentityChips(
+                  widget.user,
+                ).map((text) => _chip(text)).toList(),
+              ),
+
+              const SizedBox(height: 20),
+
+              /// 🔥 STATS CARD (LIKE YOUR REFERENCE)
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 24),
+                padding: const EdgeInsets.symmetric(vertical: 18),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.5),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _StatItem(
+                      value: widget.user.projects.length.toString(),
+                      label: "Projects",
+                    ),
+                    _Divider(),
+                    _StatItem(
+                      value: widget.user.rating.toStringAsFixed(1),
+                      label: "Rating",
+                    ),
+                    _Divider(),
+                    _StatItem(
+                      value: "${widget.user.completedProjects}",
+                      label: "Completed",
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              /// 🔥 SECTION CARDS (NOT FLAT ANYMORE)
+              _sectionCard(0, Icons.star_border, "Credibility", widget.user),
+              _sectionCard(1, Icons.work_outline, "Work", widget.user),
+              _sectionCard(2, Icons.flash_on, "Availability", widget.user),
+              _sectionCard(3, Icons.memory, "Skills", widget.user),
+              SizedBox(height: 150),
+            ],
+          ),
         ),
       ),
     );
+  }
+
+  //getIdentityChips
+  List<String> getIdentityChips(UserModel user) {
+    List<String> chips = [];
+
+    /// 1. DOMAIN (primary identity)
+    if (user.domain != null && user.domain!.isNotEmpty) {
+      chips.add(user.domain!);
+    }
+
+    /// 2. ROLE (only if different)
+    if (user.role != null &&
+        user.role!.isNotEmpty &&
+        user.role != user.domain) {
+      chips.add(user.role!);
+    }
+
+    /// 3. EXPERIENCE (formatted)
+    if (user.exp != null && user.exp!.isNotEmpty) {
+      chips.add("${user.exp}+ Years");
+    }
+
+    return chips;
   }
 
   /// CHIP
@@ -237,6 +264,9 @@ class _ChatProfileBackgroundState extends State<ChatProfileBackground> {
                 Divider(),
                 SizedBox(height: 8),
                 if (index == 0) _buildCredibility(user),
+                if (index == 1) _buildWork(user),
+                if (index == 2) _buildAvailability(user),
+                if (index == 3) _buildSkills(user),
 
                 /// 🔥 TEMP CONTENT (MVP)
                 // Text("Coming soon...", style: TextStyle(color: Colors.black54)),
@@ -248,6 +278,132 @@ class _ChatProfileBackgroundState extends State<ChatProfileBackground> {
       ),
     );
   }
+
+  // skills
+  Widget _buildSkills(UserModel user) {
+    if (user.skills.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Text("No skills added", style: TextStyle(color: Colors.black54)),
+      );
+    }
+
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: user.skills.map((skill) {
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.6),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(skill, style: const TextStyle(fontSize: 12)),
+        );
+      }).toList(),
+    );
+  }
+
+  // Availbilities build
+  Widget _buildAvailability(UserModel user) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        /// STATUS
+        Row(
+          children: [
+            Icon(
+              Icons.circle,
+              size: 10,
+              color: user.isAvailable ? Colors.green : Colors.red,
+            ),
+            SizedBox(width: 6),
+            Text(
+              user.isAvailable ? "Available for work" : "Not available",
+              style: TextStyle(fontWeight: FontWeight.w500),
+            ),
+          ],
+        ),
+
+        SizedBox(height: 8),
+
+        /// RESPONSE TIME
+        Text("⚡ Responds: ${user.responseTime}"),
+
+        SizedBox(height: 6),
+
+        /// REMOTE
+        Text(user.isRemote ? "🌍 Remote friendly" : "🏢 On-site only"),
+      ],
+    );
+  }
+
+  // work build
+  Widget _buildWork(UserModel user) {
+    if (user.projects.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Text(
+          "No projects added",
+          style: TextStyle(color: Colors.black54),
+        ),
+      );
+    }
+
+    return Column(
+      children: user.projects.map((project) {
+        return Container(
+          margin: const EdgeInsets.symmetric(vertical: 6),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.5),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Row(
+            children: [
+              /// ICON
+              Container(
+                padding: EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.work, size: 18),
+              ),
+
+              const SizedBox(width: 10),
+
+              /// TEXT
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      project['name'] ?? '',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      project['desc'] ?? '',
+                      style: TextStyle(fontSize: 12, color: Colors.black54),
+                    ),
+                  ],
+                ),
+              ),
+
+              /// ARROW
+              Icon(Icons.arrow_forward_ios, size: 14),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  // Credibility build
 
   Widget _buildCredibility(UserModel user) {
     return Column(

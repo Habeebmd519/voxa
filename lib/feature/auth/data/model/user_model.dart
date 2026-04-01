@@ -33,6 +33,13 @@ class UserModel {
   final bool isPhoneVerified;
   final bool isPro;
 
+  // Availbilies
+  final bool isAvailable;
+  final String responseTime;
+  final bool isRemote;
+  // skill
+  final List<String> skills;
+
   UserModel({
     required this.uid,
     required this.email,
@@ -56,13 +63,22 @@ class UserModel {
     this.reviewCount = 0,
     this.completedProjects = 0,
     this.badges = const [],
-    this.isEmailVerified = false,
-    this.isPhoneVerified = false,
+    this.isEmailVerified = true,
+    this.isPhoneVerified = true,
     this.isPro = false,
+    // Availbilies
+    this.isAvailable = true,
+    this.responseTime = "Fast",
+    this.isRemote = true,
+
+    //skill
+    this.skills = const [],
   });
 
   /// FROM FIRESTORE
   factory UserModel.fromMap(Map<String, dynamic> map) {
+    print("🔥 RAW USER MAP: $map");
+    print("🔥 RATING FIELD: ${map['rating']} (${map['rating']?.runtimeType})");
     return UserModel(
       uid: map['uid'] ?? '',
       email: map['email'] ?? '',
@@ -94,8 +110,9 @@ class UserModel {
       projects: List<Map<String, dynamic>>.from(map['projects'] ?? []),
 
       // ⭐ Credibility
-      rating: map['rating'] is num ? (map['rating'] as num).toDouble() : 0.0,
-      reviewCount: map['reviewCount'] is int ? map['reviewCount'] : 0,
+      rating: (map['rating'] ?? 0.0)
+          .toDouble(), // 1. Handle Null with ?? 2. Force double
+      reviewCount: (map['reviewCount'] ?? 0).toInt(),
       completedProjects: map['completedProjects'] is int
           ? map['completedProjects']
           : 0,
@@ -103,6 +120,12 @@ class UserModel {
       isEmailVerified: map['isEmailVerified'] ?? false,
       isPhoneVerified: map['isPhoneVerified'] ?? false,
       isPro: map['isPro'] ?? false,
+      // Availbilies
+      isAvailable: map['isAvailable'] ?? true,
+      responseTime: map['responseTime'] ?? "Fast",
+      isRemote: map['isRemote'] ?? true,
+      // skill
+      skills: List<String>.from(map['skills'] ?? []),
     );
   }
 
@@ -138,6 +161,12 @@ class UserModel {
       'isEmailVerified': isEmailVerified,
       'isPhoneVerified': isPhoneVerified,
       'isPro': isPro,
+      // Availbilies
+      'isAvailable': isAvailable,
+      'responseTime': responseTime,
+      'isRemote': isRemote,
+      // skill
+      'skills': skills,
     };
   }
 
@@ -168,6 +197,12 @@ class UserModel {
     bool? isEmailVerified,
     bool? isPhoneVerified,
     bool? isPro,
+    // availbilities
+    bool? isAvailable,
+    String? responseTime,
+    bool? isRemote,
+    //skill
+    List<String>? skills,
   }) {
     return UserModel(
       uid: uid ?? this.uid,
@@ -195,6 +230,13 @@ class UserModel {
       isEmailVerified: isEmailVerified ?? this.isEmailVerified,
       isPhoneVerified: isPhoneVerified ?? this.isPhoneVerified,
       isPro: isPro ?? this.isPro,
+      // availbilities
+      isAvailable: isAvailable ?? this.isAvailable,
+      responseTime: responseTime ?? this.responseTime,
+      isRemote: isRemote ?? this.isRemote,
+
+      ///
+      skills: skills ?? this.skills,
     );
   }
 }
