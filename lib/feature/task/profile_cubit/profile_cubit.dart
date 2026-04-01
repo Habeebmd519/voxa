@@ -12,9 +12,10 @@ import 'package:voxa/feature/task/profile_cubit/prifile_state.dart';
 class ProfileCubit extends Cubit<ProfileState> {
   ProfileCubit() : super(ProfileInitial());
 
-  final user = FirebaseAuth.instance.currentUser;
+  // final user = FirebaseAuth.instance.currentUser;
 
   Future<void> loadProfile() async {
+    final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
     emit(ProfileLoading());
@@ -34,6 +35,7 @@ class ProfileCubit extends Cubit<ProfileState> {
   }
 
   Future<void> updateProfile(UserModel updatedUser) async {
+    final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
     try {
@@ -67,6 +69,7 @@ class ProfileCubit extends Cubit<ProfileState> {
   }
 
   Future<void> pickAndUploadImage() async {
+    final user = FirebaseAuth.instance.currentUser;
     if (user == null) return; // This is the Firebase User
 
     try {
@@ -120,6 +123,7 @@ class ProfileCubit extends Cubit<ProfileState> {
 
   /// delete supabase.profile codes
   Future<bool> deleteMyProfileImage() async {
+    final user = FirebaseAuth.instance.currentUser;
     if (user == null) return false;
 
     try {
@@ -159,6 +163,7 @@ class ProfileCubit extends Cubit<ProfileState> {
     String? domain,
     String? role,
   }) async {
+    final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
     try {

@@ -24,6 +24,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   late TextEditingController placeCtrl;
   late TextEditingController expCtrl;
   late TextEditingController domainCtrl;
+  late TextEditingController emailCtrl;
+  late TextEditingController uidCtrl;
   late StreamSubscription editSub;
   String? selectedRole;
   List<ProjectItem> projectItems = [];
@@ -40,6 +42,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       placeCtrl = TextEditingController(text: user.place ?? "");
       expCtrl = TextEditingController(text: user.exp ?? "");
       domainCtrl = TextEditingController(text: user.domain ?? "");
+      emailCtrl = TextEditingController(text: user.email);
+      uidCtrl = TextEditingController(text: user.uid);
       selectedRole = user.role;
       projectItems = user.projects.map((p) {
         return ProjectItem.filled(p['name'] ?? '', p['desc'] ?? '');
@@ -58,8 +62,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void removeProject(int index) {
-    projectItems[index].dispose();
-    setState(() => projectItems.removeAt(index));
+    final item = projectItems[index];
+
+    setState(() {
+      projectItems = List.from(projectItems)..removeAt(index);
+    });
+
+    item.dispose();
   }
 
   void saveProfile() {
@@ -125,6 +134,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (widget.state is ProfileLoaded) {
       editableUser = widget.state.user;
       // _showToast("Profile updated");
+      editableUser = widget.state.user;
     }
 
     return BlocListener<ProfileCubit, ProfileState>(
@@ -156,10 +166,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             placeCtrl: placeCtrl,
             expCtrl: expCtrl,
             domainCtrl: domainCtrl,
+            emailCtrl: emailCtrl,
             isEditing: isEditing,
             selectedRole: selectedRole,
             onRoleChanged: (role) {
-              selectedRole = role;
+              setState(() {
+                selectedRole = role;
+              });
             },
             projectItems: projectItems,
             onAddProject: addProject,
@@ -183,6 +196,7 @@ class _ProfileSheetContent extends StatelessWidget {
   final TextEditingController placeCtrl;
   final TextEditingController expCtrl;
   final TextEditingController domainCtrl;
+  final TextEditingController emailCtrl;
   final bool isEditing;
   final String? selectedRole;
   final Function(String) onRoleChanged;
@@ -204,6 +218,7 @@ class _ProfileSheetContent extends StatelessWidget {
     required this.projectItems,
     required this.onAddProject,
     required this.onRemoveProject,
+    required this.emailCtrl,
   });
 
   @override
@@ -244,7 +259,7 @@ class _ProfileSheetContent extends StatelessWidget {
         const SizedBox(height: 12),
         _ProfileField(
           label: "EMAIL",
-          controller: TextEditingController(text: state.user.email),
+          controller: emailCtrl,
           editing: false,
           icon: Icons.email,
           readonlyHint: true,
@@ -339,6 +354,7 @@ class _ProfileSheetContent extends StatelessWidget {
             final project = projectItems[i];
 
             return Container(
+              key: ValueKey(project),
               margin: const EdgeInsets.only(bottom: 12),
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
@@ -671,7 +687,9 @@ class _RolePicker extends StatelessWidget {
       children: kRoles.map((role) {
         final isSelected = selected == role;
         return GestureDetector(
-          onTap: () => onSelect(role),
+          onTap: () {
+            onSelect(role);
+          },
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),

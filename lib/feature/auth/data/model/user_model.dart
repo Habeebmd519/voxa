@@ -24,6 +24,15 @@ class UserModel {
   final Map<String, int> unreadCount; // key = otherUserId, value = unread count
   final String? lastSenderId;
 
+  // ⭐ Credibility
+  final double rating;
+  final int reviewCount;
+  final int completedProjects;
+  final List<String> badges;
+  final bool isEmailVerified;
+  final bool isPhoneVerified;
+  final bool isPro;
+
   UserModel({
     required this.uid,
     required this.email,
@@ -42,6 +51,14 @@ class UserModel {
     this.exp,
     this.domain,
     this.projects = const [],
+    // ⭐ Credibility
+    this.rating = 0.0,
+    this.reviewCount = 0,
+    this.completedProjects = 0,
+    this.badges = const [],
+    this.isEmailVerified = false,
+    this.isPhoneVerified = false,
+    this.isPro = false,
   });
 
   /// FROM FIRESTORE
@@ -76,7 +93,16 @@ class UserModel {
       domain: map['domain'],
       projects: List<Map<String, dynamic>>.from(map['projects'] ?? []),
 
-      //¯¸
+      // ⭐ Credibility
+      rating: map['rating'] is num ? (map['rating'] as num).toDouble() : 0.0,
+      reviewCount: map['reviewCount'] is int ? map['reviewCount'] : 0,
+      completedProjects: map['completedProjects'] is int
+          ? map['completedProjects']
+          : 0,
+      badges: List<String>.from(map['badges'] ?? []),
+      isEmailVerified: map['isEmailVerified'] ?? false,
+      isPhoneVerified: map['isPhoneVerified'] ?? false,
+      isPro: map['isPro'] ?? false,
     );
   }
 
@@ -104,6 +130,14 @@ class UserModel {
       'exp': exp,
       'domain': domain,
       'projects': projects,
+      // ⭐ Credibility
+      'rating': rating,
+      'reviewCount': reviewCount,
+      'completedProjects': completedProjects,
+      'badges': badges,
+      'isEmailVerified': isEmailVerified,
+      'isPhoneVerified': isPhoneVerified,
+      'isPro': isPro,
     };
   }
 
@@ -126,6 +160,14 @@ class UserModel {
     String? exp,
     String? domain,
     List<Map<String, dynamic>>? projects,
+    // ⭐ Credibility
+    double? rating,
+    int? reviewCount,
+    int? completedProjects,
+    List<String>? badges,
+    bool? isEmailVerified,
+    bool? isPhoneVerified,
+    bool? isPro,
   }) {
     return UserModel(
       uid: uid ?? this.uid,
@@ -145,6 +187,14 @@ class UserModel {
       exp: exp ?? this.exp,
       domain: domain ?? this.domain,
       projects: projects ?? this.projects,
+      // ⭐ Credibility
+      rating: rating ?? this.rating,
+      reviewCount: reviewCount ?? this.reviewCount,
+      completedProjects: completedProjects ?? this.completedProjects,
+      badges: badges ?? this.badges,
+      isEmailVerified: isEmailVerified ?? this.isEmailVerified,
+      isPhoneVerified: isPhoneVerified ?? this.isPhoneVerified,
+      isPro: isPro ?? this.isPro,
     );
   }
 }

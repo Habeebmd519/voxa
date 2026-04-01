@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:voxa/feature/auth/data/model/user_model.dart';
 
-class ChatProfileBackground extends StatelessWidget {
+class ChatProfileBackground extends StatefulWidget {
   final UserModel user;
 
   const ChatProfileBackground({super.key, required this.user});
 
+  @override
+  State<ChatProfileBackground> createState() => _ChatProfileBackgroundState();
+}
+
+class _ChatProfileBackgroundState extends State<ChatProfileBackground> {
+  int? expandedIndex;
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -53,12 +59,15 @@ class ChatProfileBackground extends StatelessWidget {
                   radius: 42,
                   backgroundColor: Colors.white,
                   backgroundImage:
-                      user.photoUrl != null && user.photoUrl!.isNotEmpty
-                      ? NetworkImage(user.photoUrl!)
+                      widget.user.photoUrl != null &&
+                          widget.user.photoUrl!.isNotEmpty
+                      ? NetworkImage(widget.user.photoUrl!)
                       : null,
-                  child: user.photoUrl == null || user.photoUrl!.isEmpty
+                  child:
+                      widget.user.photoUrl == null ||
+                          widget.user.photoUrl!.isEmpty
                       ? Text(
-                          user.name[0].toUpperCase(),
+                          widget.user.name[0].toUpperCase(),
                           style: const TextStyle(
                             fontSize: 28,
                             fontWeight: FontWeight.bold,
@@ -88,7 +97,7 @@ class ChatProfileBackground extends StatelessWidget {
 
             /// NAME
             Text(
-              user.name,
+              widget.user.name,
               style: const TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.w700,
@@ -100,7 +109,7 @@ class ChatProfileBackground extends StatelessWidget {
 
             /// TAGLINE / DOMAIN
             Text(
-              user.place ?? "Not Available",
+              widget.user.place ?? "Not Available",
               style: TextStyle(
                 color: Colors.black.withOpacity(0.6),
                 fontSize: 13,
@@ -113,10 +122,10 @@ class ChatProfileBackground extends StatelessWidget {
             Wrap(
               spacing: 8,
               children: [
-                _chip(user.domain ?? "Available for collaboration"),
-                _chip(user.role ?? ".."),
-                if (user.exp != null && user.exp!.isNotEmpty)
-                  _chip("${user.exp} yr Experience"),
+                _chip(widget.user.domain ?? "Available for collaboration"),
+                _chip(widget.user.role ?? ".."),
+                if (widget.user.exp != null && widget.user.exp!.isNotEmpty)
+                  _chip("${widget.user.exp} yr Experience"),
               ],
             ),
 
@@ -134,13 +143,16 @@ class ChatProfileBackground extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   _StatItem(
-                    value: user.projects.length.toString(),
+                    value: widget.user.projects.length.toString(),
                     label: "Projects",
                   ),
                   _Divider(),
-                  _StatItem(value: "4.9", label: "Rating"),
+                  _StatItem(
+                    value: widget.user.rating.toStringAsFixed(1),
+                    label: "Rating",
+                  ),
                   _Divider(),
-                  _StatItem(value: "${user.exp}", label: "Exp"),
+                  _StatItem(value: "${widget.user.exp}", label: "Exp"),
                 ],
               ),
             ),
@@ -148,10 +160,11 @@ class ChatProfileBackground extends StatelessWidget {
             const SizedBox(height: 20),
 
             /// 🔥 SECTION CARDS (NOT FLAT ANYMORE)
-            _sectionCard(Icons.star_border, "Credibility"),
-            _sectionCard(Icons.work_outline, "Work"),
-            _sectionCard(Icons.flash_on, "Response"),
-            _sectionCard(Icons.memory, "Skills"),
+            _sectionCard(0, Icons.star_border, "Credibility", widget.user),
+            _sectionCard(1, Icons.work_outline, "Work", widget.user),
+            _sectionCard(2, Icons.flash_on, "Response", widget.user),
+            _sectionCard(3, Icons.memory, "Skills", widget.user),
+            // SizedBox(height: 20),r
           ],
         ),
       ),
@@ -171,29 +184,148 @@ class ChatProfileBackground extends StatelessWidget {
   }
 
   /// SECTION CARD
-  Widget _sectionCard(IconData icon, String title) {
-    return Container(
+  Widget _sectionCard(int index, IconData icon, String title, UserModel user) {
+    final isExpanded = expandedIndex == index;
+
+    return AnimatedContainer(
+      duration: Duration(milliseconds: 300),
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.4),
         borderRadius: BorderRadius.circular(18),
       ),
-      child: Row(
+      child: Column(
         children: [
-          CircleAvatar(
-            backgroundColor: Colors.white,
-            child: Icon(icon, color: Colors.black),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              title,
-              style: const TextStyle(fontWeight: FontWeight.w600),
+          GestureDetector(
+            onTap: () {
+              setState(() {
+                expandedIndex = isExpanded ? null : index;
+              });
+            },
+            child: Row(
+              children: [
+                CircleAvatar(
+                  backgroundColor: Colors.white,
+                  child: Icon(icon, color: Colors.black),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ),
+                AnimatedRotation(
+                  duration: Duration(milliseconds: 300),
+                  turns: isExpanded ? 0.5 : 0.0,
+                  child: const Icon(Icons.keyboard_arrow_down),
+                ),
+              ],
             ),
           ),
-          const Icon(Icons.keyboard_arrow_down),
+
+          /// 🔥 EXPAND CONTENT
+          AnimatedCrossFade(
+            duration: Duration(milliseconds: 300),
+            crossFadeState: isExpanded
+                ? CrossFadeState.showFirst
+                : CrossFadeState.showSecond,
+            firstChild: Column(
+              children: [
+                SizedBox(height: 12),
+                Divider(),
+                SizedBox(height: 8),
+                if (index == 0) _buildCredibility(user),
+
+                /// 🔥 TEMP CONTENT (MVP)
+                // Text("Coming soon...", style: TextStyle(color: Colors.black54)),
+              ],
+            ),
+            secondChild: SizedBox(),
+          ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildCredibility(UserModel user) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text("⭐ ${user.rating} (${user.reviewCount} reviews)"),
+        SizedBox(height: 6),
+        Text("📁 ${user.completedProjects} Projects Completed"),
+        SizedBox(height: 6),
+
+        if (user.badges.isNotEmpty)
+          Wrap(
+            spacing: 6,
+            children: user.badges.map((b) {
+              return Chip(label: Text(b));
+            }).toList(),
+          ),
+
+        SizedBox(height: 8),
+
+        Row(
+          children: [
+            if (user.isEmailVerified) _miniBadge(Icons.verified, "Email"),
+            if (user.isPhoneVerified) _miniBadge(Icons.phone, "Phone"),
+            if (user.isPro) _proBadge(),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _miniBadge(IconData icon, String label) {
+    return Container(
+      margin: const EdgeInsets.only(right: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.6),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: Colors.green.shade700),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _proBadge() {
+    return Container(
+      margin: const EdgeInsets.only(right: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFFFFD54F), Color(0xFFFFB300)],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.orange.withOpacity(0.3),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: const Text(
+        "PRO",
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
+          color: Colors.black,
+          letterSpacing: 0.5,
+        ),
       ),
     );
   }
