@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:voxa/core/shimmer_loading/shimmer_loading.dart';
@@ -18,9 +19,34 @@ class ProfileScreen extends StatefulWidget {
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
+class _ProfileScreenState extends State<ProfileScreen>
+    with WidgetsBindingObserver {
+  Future<void> checkEmailVerification() async {
+    final firebaseUser = FirebaseAuth.instance.currentUser;
+
+    if (firebaseUser == null) return;
+
+    await firebaseUser.reload();
+
+    final updatedUser = FirebaseAuth.instance.currentUser;
+
+    if (updatedUser != null && updatedUser.emailVerified) {
+      print("✅ Email verified");
+
+      final newUser = editableUser.copyWith(isEmailVerified: true);
+
+      setState(() {
+        editableUser = newUser;
+      });
+
+      // 🔥 THEN UPDATE FIRESTORE
+      context.read<ProfileCubit>().updateProfile(newUser);
+    }
+  }
+
   late UserModel editableUser;
   late TextEditingController nameCtrl;
+  late TextEditingController phoneCtrl;
   late TextEditingController placeCtrl;
   late TextEditingController expCtrl;
   late TextEditingController domainCtrl;
@@ -33,7 +59,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void initState() {
     super.initState();
 
+    WidgetsBinding.instance.addObserver(this);
+
     nameCtrl = TextEditingController();
+    phoneCtrl = TextEditingController();
     placeCtrl = TextEditingController();
     expCtrl = TextEditingController();
     domainCtrl = TextEditingController();
@@ -46,6 +75,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       editableUser = user;
 
       nameCtrl.text = user.name;
+      phoneCtrl.text = user.phone;
       placeCtrl.text = user.place ?? "";
       expCtrl.text = user.exp ?? "";
       domainCtrl.text = user.domain ?? "";
@@ -62,6 +92,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
     editSub = context.read<EditCubit>().stream.listen((isEditing) {
       if (!isEditing) saveProfile();
     });
+    if (widget.state is ProfileLoaded) {
+      editableUser = (widget.state as ProfileLoaded).user;
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      checkEmailVerification(); // 🔥 THIS IS THE KEY
+    }
   }
 
   void addProject() {
@@ -94,6 +134,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     final updatedUser = editableUser.copyWith(
       name: nameCtrl.text,
+
       place: placeCtrl.text,
       exp: expCtrl.text,
       domain: domainCtrl.text,
@@ -106,6 +147,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     editSub.cancel();
     nameCtrl.dispose();
     placeCtrl.dispose();
@@ -147,15 +189,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.state is ProfileLoaded) {
-      editableUser = widget.state.user;
-      // _showToast("Profile updated");
-      editableUser = widget.state.user;
-    }
+    // if (widget.state is ProfileLoaded) {
+    //   editableUser = widget.state.user;
+    //   // _showToast("Profile updated");
+    //   // editableUser = widget.state.user;
+    // }
 
     return BlocListener<ProfileCubit, ProfileState>(
       listener: (context, state) {
         if (state is ProfileLoaded) {
+          setState(() {
+            editableUser = state.user; // ✅ SAFE UPDATE
+          });
           _showToast("Profile updated");
         }
       },
@@ -179,6 +224,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             state: state,
             uid: uid,
             nameCtrl: nameCtrl,
+            phoneCtrl: phoneCtrl,
             placeCtrl: placeCtrl,
             expCtrl: expCtrl,
             domainCtrl: domainCtrl,
@@ -209,6 +255,7 @@ class _ProfileSheetContent extends StatelessWidget {
   final String uid;
 
   final TextEditingController nameCtrl;
+  final TextEditingController phoneCtrl;
   final TextEditingController placeCtrl;
   final TextEditingController expCtrl;
   final TextEditingController domainCtrl;
@@ -225,6 +272,7 @@ class _ProfileSheetContent extends StatelessWidget {
     required this.state,
     required this.uid,
     required this.nameCtrl,
+    required this.phoneCtrl,
     required this.placeCtrl,
     required this.expCtrl,
     required this.domainCtrl,
@@ -273,12 +321,38 @@ class _ProfileSheetContent extends StatelessWidget {
           icon: Icons.person,
         ),
         const SizedBox(height: 12),
+
         _ProfileField(
           label: "EMAIL",
           controller: emailCtrl,
-          editing: false,
+          editing: isEditing,
           icon: Icons.email,
           readonlyHint: true,
+          isVerified: state.user.isEmailVerified,
+
+          onVerify: () async {
+            print("Sending email...");
+            await FirebaseAuth.instance.currentUser!.sendEmailVerification();
+            print("Sent!");
+
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text("Verification email sent")),
+            );
+          },
+        ),
+        const SizedBox(height: 12),
+        _ProfileField(
+          label: "PHONE",
+          controller: phoneCtrl,
+          editing: isEditing,
+          icon: Icons.phone,
+          readonlyHint: true,
+          isVerified: state.user.isPhoneVerified,
+
+          onVerify: () {
+            // open OTP screen (later)
+            print("Verify phone");
+          },
         ),
         const SizedBox(height: 12),
         _ProfileField(
@@ -516,6 +590,8 @@ class _ProfileField extends StatefulWidget {
   final bool editing, obscure, readonlyHint;
   final TextInputType keyboardType;
   final IconData icon;
+  final bool isVerified;
+  final VoidCallback? onVerify;
   const _ProfileField({
     required this.label,
     required this.controller,
@@ -524,6 +600,8 @@ class _ProfileField extends StatefulWidget {
     this.obscure = false,
     this.readonlyHint = false,
     this.keyboardType = TextInputType.text,
+    this.isVerified = false,
+    this.onVerify,
   });
   @override
   State<_ProfileField> createState() => _ProfileFieldState();
@@ -610,14 +688,46 @@ class _ProfileFieldState extends State<_ProfileField> {
               ),
             ),
           ),
-          if (!widget.editing && widget.readonlyHint)
-            const Padding(
-              padding: EdgeInsets.only(left: 6),
-              child: Icon(
-                Icons.lock_outline,
-                size: 14,
-                color: Color(0xFFCCCCCC),
-              ),
+          // if (!widget.editing && widget.readonlyHint)
+          //   const Padding(
+          //     padding: EdgeInsets.only(left: 6),
+          //     child: Icon(
+          //       Icons.lock_outline,
+          //       size: 14,
+          //       color: Color(0xFFCCCCCC),
+          //     ),
+          //   ),
+          /// RIGHT SIDE ACTION
+          if (widget.readonlyHint)
+            Padding(
+              padding: const EdgeInsets.only(left: 6),
+              child: widget.editing && !widget.isVerified
+                  ? GestureDetector(
+                      onTap: widget.onVerify,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: C.cardGreen,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Text(
+                          "Verify",
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    )
+                  : Icon(
+                      widget.isVerified ? Icons.verified : Icons.error_outline,
+                      size: 16,
+                      color: widget.isVerified ? Colors.green : Colors.grey,
+                    ),
             ),
         ],
       ),

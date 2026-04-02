@@ -63,8 +63,8 @@ class UserModel {
     this.reviewCount = 0,
     this.completedProjects = 0,
     this.badges = const [],
-    this.isEmailVerified = true,
-    this.isPhoneVerified = true,
+    this.isEmailVerified = false,
+    this.isPhoneVerified = false,
     this.isPro = false,
     // Availbilies
     this.isAvailable = true,
