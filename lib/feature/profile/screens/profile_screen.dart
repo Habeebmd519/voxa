@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:voxa/core/shimmer_loading/shimmer_loading.dart';
 import 'package:voxa/feature/auth/data/model/user_model.dart';
 import 'package:voxa/feature/profile/screens/cubit/edit_cubit.dart';
+import 'package:voxa/feature/profile/screens/otp_screen.dart';
 import 'package:voxa/feature/task/profile_cubit/prifile_state.dart';
 import 'package:voxa/feature/task/profile_cubit/profile_cubit.dart';
 
@@ -42,6 +43,12 @@ class _ProfileScreenState extends State<ProfileScreen>
       // 🔥 THEN UPDATE FIRESTORE
       context.read<ProfileCubit>().updateProfile(newUser);
     }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    checkEmailVerification();
   }
 
   late UserModel editableUser;
@@ -95,6 +102,28 @@ class _ProfileScreenState extends State<ProfileScreen>
     if (widget.state is ProfileLoaded) {
       editableUser = (widget.state as ProfileLoaded).user;
     }
+    checkEmailVerification();
+    Timer.periodic(const Duration(seconds: 3), (timer) async {
+      final user = FirebaseAuth.instance.currentUser;
+
+      if (user == null) return;
+
+      await user.reload();
+
+      if (user.emailVerified) {
+        timer.cancel(); // stop loop
+
+        print("✅ Verified detected");
+
+        final newUser = editableUser.copyWith(isEmailVerified: true);
+
+        setState(() {
+          editableUser = newUser;
+        });
+
+        context.read<ProfileCubit>().updateProfile(newUser);
+      }
+    });
   }
 
   @override
@@ -143,6 +172,17 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
 
     context.read<ProfileCubit>().updateProfile(updatedUser);
+    _showToast("Profile updated");
+  }
+
+  void _updatePhoneVerified() {
+    final newUser = editableUser.copyWith(isPhoneVerified: true);
+
+    setState(() {
+      editableUser = newUser;
+    });
+
+    context.read<ProfileCubit>().updateProfile(newUser);
   }
 
   @override
@@ -201,7 +241,6 @@ class _ProfileScreenState extends State<ProfileScreen>
           setState(() {
             editableUser = state.user; // ✅ SAFE UPDATE
           });
-          _showToast("Profile updated");
         }
       },
       child: _buildBottomSection(widget.state, widget.uid),
@@ -239,6 +278,8 @@ class _ProfileScreenState extends State<ProfileScreen>
             projectItems: projectItems,
             onAddProject: addProject,
             onRemoveProject: removeProject,
+            editableUser: editableUser,
+            updatePhoneVerified: _updatePhoneVerified,
           );
         },
       );
@@ -265,7 +306,9 @@ class _ProfileSheetContent extends StatelessWidget {
   final Function(String) onRoleChanged;
   final List<ProjectItem> projectItems;
   final VoidCallback onAddProject;
+  final VoidCallback updatePhoneVerified;
   final Function(int) onRemoveProject;
+  final UserModel editableUser;
 
   const _ProfileSheetContent({
     super.key,
@@ -283,6 +326,8 @@ class _ProfileSheetContent extends StatelessWidget {
     required this.onAddProject,
     required this.onRemoveProject,
     required this.emailCtrl,
+    required this.editableUser,
+    required this.updatePhoneVerified,
   });
 
   @override
@@ -328,7 +373,7 @@ class _ProfileSheetContent extends StatelessWidget {
           editing: isEditing,
           icon: Icons.email,
           readonlyHint: true,
-          isVerified: state.user.isEmailVerified,
+          isVerified: editableUser.isEmailVerified,
 
           onVerify: () async {
             print("Sending email...");
@@ -349,9 +394,53 @@ class _ProfileSheetContent extends StatelessWidget {
           readonlyHint: true,
           isVerified: state.user.isPhoneVerified,
 
-          onVerify: () {
-            // open OTP screen (later)
-            print("Verify phone");
+          onVerify: () async {
+            final phone = '+91${phoneCtrl.text.trim()}';
+
+            /// 🔥 TEST NUMBER FLOW (IMPORTANT)
+            if (phone == '+911234567890') {
+              print("🧪 Using test number");
+
+              final credential = PhoneAuthProvider.credential(
+                verificationId: 'test',
+                smsCode: '123456',
+              );
+
+              await FirebaseAuth.instance.currentUser!.linkWithCredential(
+                credential,
+              );
+
+              updatePhoneVerified();
+              return; // ⛔ STOP HERE
+            }
+
+            /// 🔥 REAL FLOW
+            await FirebaseAuth.instance.verifyPhoneNumber(
+              phoneNumber: phone,
+
+              verificationCompleted: (credential) async {
+                await FirebaseAuth.instance.currentUser!.linkWithCredential(
+                  credential,
+                );
+
+                updatePhoneVerified();
+              },
+
+              verificationFailed: (e) {
+                print("❌ ${e.message}");
+              },
+
+              codeSent: (verificationId, resendToken) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => OtpScreen(verificationId: verificationId),
+                  ),
+                );
+              },
+
+              codeAutoRetrievalTimeout: (_) {},
+            );
           },
         ),
         const SizedBox(height: 12),

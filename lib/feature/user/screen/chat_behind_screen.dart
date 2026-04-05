@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:voxa/feature/auth/data/model/user_model.dart';
 
@@ -406,14 +408,163 @@ class _ChatProfileBackgroundState extends State<ChatProfileBackground> {
   // Credibility build
 
   Widget _buildCredibility(UserModel user) {
+    //submition
+
+    Future<void> submitReview({
+      required String toUserId,
+      required double rating,
+      required String comment,
+    }) async {
+      final fromUserId = FirebaseAuth.instance.currentUser!.uid;
+
+      // Save review
+      await FirebaseFirestore.instance.collection('reviews').add({
+        "fromUserId": fromUserId,
+        "toUserId": toUserId,
+        "rating": rating,
+        "comment": comment,
+        "createdAt": FieldValue.serverTimestamp(),
+      });
+
+      // Update rating avg
+      final userRef = FirebaseFirestore.instance
+          .collection('users')
+          .doc(toUserId);
+
+      await FirebaseFirestore.instance.runTransaction((tx) async {
+        final snap = await tx.get(userRef);
+
+        final data = snap.data()!;
+        final oldRating = (data['rating'] ?? 0).toDouble();
+        final count = (data['reviewCount'] ?? 0);
+
+        final newCount = count + 1;
+        final newRating = ((oldRating * count) + rating) / newCount;
+
+        tx.update(userRef, {"rating": newRating, "reviewCount": newCount});
+      });
+    }
+
+    void _showRatingDialog(BuildContext context, String toUserId) {
+      double rating = 0;
+
+      showDialog(
+        context: context,
+        builder: (context) {
+          return StatefulBuilder(
+            builder: (context, setState) {
+              return AlertDialog(
+                title: const Text("Rate User"),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(5, (index) {
+                        return IconButton(
+                          icon: Icon(
+                            index < rating ? Icons.star : Icons.star_border,
+                            color: Colors.orange,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              rating = index + 1;
+                            });
+                          },
+                        );
+                      }),
+                    ),
+                  ],
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () async {
+                      if (rating == 0) return;
+
+                      await submitReview(
+                        toUserId: toUserId,
+                        rating: rating,
+                        comment: "Good work",
+                      );
+
+                      Navigator.pop(context);
+                    },
+                    child: const Text("Submit"),
+                  ),
+                ],
+              );
+            },
+          );
+        },
+      );
+    }
+
+    //check if did erly
+    Future<bool> hasRated(String toUserId) async {
+      final fromUserId = FirebaseAuth.instance.currentUser!.uid;
+
+      final query = await FirebaseFirestore.instance
+          .collection('reviews')
+          .where('fromUserId', isEqualTo: fromUserId)
+          .where('toUserId', isEqualTo: toUserId)
+          .get();
+
+      return query.docs.isNotEmpty;
+    }
+
+    final rating = user.rating;
+    final total = user.reviewCount;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text("⭐ ${user.rating} (${user.reviewCount} reviews)"),
-        SizedBox(height: 6),
-        Text("📁 ${user.completedProjects} Projects Completed"),
-        SizedBox(height: 6),
+        /// ⭐ TOP RATING SUMMARY
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Text(
+              rating.toStringAsFixed(1),
+              style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(width: 8),
 
+            /// STARS
+            Row(
+              children: List.generate(5, (index) {
+                return Icon(
+                  index < rating.floor() ? Icons.star : Icons.star_border,
+                  size: 18,
+                  color: Colors.orange,
+                );
+              }),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 4),
+
+        Text(
+          "$total reviews",
+          style: TextStyle(color: Colors.black.withOpacity(0.6)),
+        ),
+
+        const SizedBox(height: 12),
+
+        /// 📊 RATING BREAKDOWN (FAKE FOR NOW)
+        _ratingBar(5, 0.7),
+        _ratingBar(4, 0.5),
+        _ratingBar(3, 0.2),
+        _ratingBar(2, 0.05),
+        _ratingBar(1, 0.02),
+
+        const SizedBox(height: 12),
+
+        /// 📁 PROJECTS
+        Text("📁 ${user.completedProjects} Projects Completed"),
+
+        const SizedBox(height: 10),
+
+        /// 🏅 BADGES
         if (user.badges.isNotEmpty)
           Wrap(
             spacing: 6,
@@ -422,8 +573,9 @@ class _ChatProfileBackgroundState extends State<ChatProfileBackground> {
             }).toList(),
           ),
 
-        SizedBox(height: 8),
+        const SizedBox(height: 10),
 
+        /// 🔐 VERIFICATION
         Row(
           children: [
             if (user.isEmailVerified) _miniBadge(Icons.verified, "Email"),
@@ -431,7 +583,93 @@ class _ChatProfileBackgroundState extends State<ChatProfileBackground> {
             if (user.isPro) _proBadge(),
           ],
         ),
+
+        const SizedBox(height: 12),
+        FutureBuilder<bool>(
+          future: hasRated(user.uid),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) return SizedBox();
+
+            if (snapshot.data == true) {
+              return Text("You already rated");
+            }
+
+            return ElevatedButton(
+              onPressed: () {
+                _showRatingDialog(context, user.uid);
+              },
+              child: const Text("Rate User ⭐"),
+            );
+          },
+        ),
+
+        /// 💬 SAMPLE REVIEW CARD (UI ONLY)
+        _reviewCard(),
       ],
+    );
+  }
+
+  Widget _ratingBar(int star, double value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        children: [
+          Text("$star"),
+          const Icon(Icons.star, size: 14, color: Colors.orange),
+          const SizedBox(width: 6),
+
+          Expanded(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: LinearProgressIndicator(
+                value: value,
+                minHeight: 6,
+                backgroundColor: Colors.white.withOpacity(0.3),
+                valueColor: AlwaysStoppedAnimation(Colors.orange),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _reviewCard() {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.5),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CircleAvatar(radius: 12),
+              const SizedBox(width: 6),
+              const Text(
+                "Client Name",
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+
+          Row(
+            children: List.generate(5, (i) {
+              return const Icon(Icons.star, size: 14, color: Colors.orange);
+            }),
+          ),
+
+          const SizedBox(height: 6),
+
+          const Text(
+            "Great developer, delivered on time 👌",
+            style: TextStyle(fontSize: 12),
+          ),
+        ],
+      ),
     );
   }
 
