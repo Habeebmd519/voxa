@@ -26,7 +26,7 @@ class ChatHeader extends StatelessWidget {
               onTap: () {
                 context.read<SheetCubit>().openUsers();
                 context.read<ChatsheetmanageCubit>().changeSheet(
-                  Chatsheetmanage.full,
+                  Chatsheetmanage.half,
                 );
               },
               child: Container(

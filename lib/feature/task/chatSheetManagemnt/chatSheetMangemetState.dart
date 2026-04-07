@@ -1,4 +1,4 @@
-enum Chatsheetmanage { full, half, zero }
+enum Chatsheetmanage { half, zero }
 
 class ChatsheetmanageState {
   final Chatsheetmanage selectedSheet;

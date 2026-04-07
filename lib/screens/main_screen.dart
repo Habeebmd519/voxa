@@ -194,7 +194,7 @@ class _MainScreenState extends State<MainScreen> {
                                 if (state is ShowChat) {
                                   context.read<SheetCubit>().openUsers();
                                   context.read<ChatsheetmanageCubit>()
-                                    ..changeSheet(Chatsheetmanage.full);
+                                    ..changeSheet(Chatsheetmanage.half);
 
                                   return;
                                 }

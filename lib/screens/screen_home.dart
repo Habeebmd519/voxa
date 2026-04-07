@@ -559,13 +559,22 @@ class ScreenHome extends StatelessWidget {
     ChatsheetmanageState SheetState,
   ) {
     double getHeight(BuildContext context, ChatsheetmanageState state) {
+      final screenHeight = MediaQuery.of(context).size.height;
+      final safeTop = MediaQuery.of(context).padding.top;
+      final safeBottom = MediaQuery.of(context).padding.bottom;
+
+      final usableHeight = screenHeight - safeTop - safeBottom;
+      // final usableHeight = screenHeight;
+
       switch (state.selectedSheet) {
-        case Chatsheetmanage.full:
-          return 0;
         case Chatsheetmanage.half:
-          return 200;
+          return usableHeight * 0.21; // 🔥 adaptive
+
         case Chatsheetmanage.zero:
-          return MediaQuery.of(context).size.height * 0.7;
+          return usableHeight * 0.65; // 🔥 adaptive
+
+        default:
+          return 0;
       }
     }
 
@@ -578,7 +587,8 @@ class ScreenHome extends StatelessWidget {
         Column(
           children: [
             AnimatedContainer(
-              duration: Duration(milliseconds: 300),
+              duration: Duration(milliseconds: 350),
+              curve: Curves.easeInOut,
               height: getHeight(context, SheetState),
             ),
 
@@ -588,7 +598,7 @@ class ScreenHome extends StatelessWidget {
                   child: InkWell(
                     onTap: () {
                       context.read<ChatsheetmanageCubit>().changeSheet(
-                        Chatsheetmanage.full,
+                        Chatsheetmanage.half,
                       );
                     },
                     child: const BouncingArrow(),
