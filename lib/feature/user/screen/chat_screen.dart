@@ -226,6 +226,19 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
+  // check has any deal in pending or active
+  Future<bool> hasActiveOrPendingDeal() async {
+    final snapshot = await FirebaseFirestore.instance
+        .collection('chats')
+        .doc(chatId)
+        .collection('messages')
+        .where('type', whereIn: ['deal', 'premium_deal'])
+        .where('status', whereIn: ['pending', 'active'])
+        .get();
+
+    return snapshot.docs.isNotEmpty;
+  }
+
   @override
   Widget build(BuildContext context) {
     final currentUserId = FirebaseAuth.instance.currentUser!.uid;
@@ -849,7 +862,7 @@ class _ChatScreenState extends State<ChatScreen> {
               ),
             ],
           ),
-
+          SizedBox(height: 10),
           if (status == "pending" && isSender)
             const Text(
               "Waiting for response ⏳",
@@ -857,13 +870,32 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
 
           if (status == "active")
-            const Text(
-              "Deal in progress 🚀",
-              style: TextStyle(color: Colors.green),
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: Colors.green.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Text(
+                "Deal in progress 🚀",
+                style: TextStyle(color: Colors.green),
+              ),
             ),
 
           if (status == "completed")
-            const Text("Completed ✅", style: TextStyle(color: Colors.blue)),
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Text(
+                "Completed ✅",
+                style: TextStyle(color: Colors.blue),
+              ),
+            ),
         ],
       ),
     );
@@ -971,8 +1003,22 @@ class _ChatScreenState extends State<ChatScreen> {
                 icon: Icons.flash_on,
                 title: "Quick Deal",
                 subtitle: "Simple agreement",
-                onTap: () {
+                onTap: () async {
                   Navigator.pop(context);
+
+                  final hasDeal = await hasActiveOrPendingDeal();
+
+                  if (hasDeal) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          "You already have an active/pending deal 🚫",
+                        ),
+                      ),
+                    );
+                    return;
+                  }
+
                   _showCreateDealDialog(context, receiverId);
                 },
               ),
@@ -980,8 +1026,22 @@ class _ChatScreenState extends State<ChatScreen> {
                 icon: Icons.workspace_premium,
                 title: "Premium Deal",
                 subtitle: "Full contract",
-                onTap: () {
+                onTap: () async {
                   Navigator.pop(context);
+
+                  final hasDeal = await hasActiveOrPendingDeal();
+
+                  if (hasDeal) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          "You already have an active/pending deal 🚫",
+                        ),
+                      ),
+                    );
+                    return;
+                  }
+
                   _showPremiumDealDialog(context, receiverId);
                 },
               ),

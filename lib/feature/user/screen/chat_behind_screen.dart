@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:voxa/feature/auth/data/model/user_model.dart';
@@ -5,6 +7,7 @@ import 'package:voxa/feature/task/bottomSheet/cubit/sheet_cubit.dart';
 import 'package:voxa/feature/task/bottomSheet/cubit/sheet_state.dart';
 import 'package:voxa/feature/task/chatSheetManagemnt/chatSheetManage.dart';
 import 'package:voxa/feature/task/chatSheetManagemnt/chatSheetMangemetState.dart';
+import 'package:voxa/feature/user/utils/chat_utils.dart';
 
 class ChatProfileBackground extends StatefulWidget {
   final UserModel user;
@@ -17,8 +20,88 @@ class ChatProfileBackground extends StatefulWidget {
 
 class _ChatProfileBackgroundState extends State<ChatProfileBackground> {
   int? expandedIndex;
+  final currentUser = FirebaseAuth.instance.currentUser!;
+
+  late String chatId;
+  @override
+  void initState() {
+    // TODO: implement initState
+    chatId = generateChatId(currentUser.uid, widget.user.uid);
+    super.initState();
+  }
+
+  // get active deals
+  Stream<QueryDocumentSnapshot<Map<String, dynamic>>?> getActiveDealStream() {
+    return FirebaseFirestore.instance
+        .collection('chats')
+        .doc(chatId)
+        .collection('messages')
+        .where('type', whereIn: ['deal', 'premium_deal'])
+        .where('status', isEqualTo: 'active')
+        .limit(1)
+        .snapshots()
+        .map((snapshot) {
+          if (snapshot.docs.isEmpty) return null;
+          return snapshot.docs.first;
+        });
+  }
+
   @override
   Widget build(BuildContext context) {
+    // active deal progress bar
+
+    Widget activeDealProgressBar(Map<String, dynamic> deal) {
+      print("from inside of the active deal progress bar");
+      if (deal['startDate'] == null || deal['deadline'] == null) {
+        return const SizedBox(height: 100);
+      }
+
+      final start = DateTime.parse(deal['startDate']);
+      final end = DateTime.parse(deal['deadline']);
+      final now = DateTime.now();
+
+      final totalDays = end.difference(start).inDays;
+      final passedDays = now.difference(start).inDays;
+
+      final progress = (passedDays / totalDays).clamp(0.0, 1.0);
+
+      return Container(
+        margin: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.green.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              "Deal in progress 🚀",
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+
+            const SizedBox(height: 8),
+
+            /// 🔥 PROGRESS BAR
+            LinearProgressIndicator(
+              value: progress,
+              minHeight: 6,
+              backgroundColor: Colors.grey.shade300,
+              valueColor: const AlwaysStoppedAnimation<Color>(Colors.green),
+            ),
+
+            const SizedBox(height: 6),
+
+            /// TEXT
+            Text(
+              "${passedDays.clamp(0, totalDays)} / $totalDays days",
+              style: const TextStyle(fontSize: 12),
+            ),
+          ],
+        ),
+      );
+    }
+
     return BlocBuilder<ChatsheetmanageCubit, ChatsheetmanageState>(
       builder: (context, state) {
         return Container(
@@ -36,10 +119,34 @@ class _ChatProfileBackgroundState extends State<ChatProfileBackground> {
                   if (state.selectedSheet == Chatsheetmanage.half) ...{
                     _topBarSction(widget.user),
                     SizedBox(height: 20),
-                    Container(height: 40, decoration: BoxDecoration()),
+                    // Container(height: 40, decoration: BoxDecoration()),
+                    StreamBuilder<QueryDocumentSnapshot<Map<String, dynamic>>?>(
+                      stream: getActiveDealStream(),
+                      builder: (context, snapshot) {
+                        if (!snapshot.hasData || snapshot.data == null) {
+                          return const SizedBox();
+                        }
+
+                        final deal = snapshot.data!.data(); // ✅ no cast needed
+
+                        return activeDealProgressBar(deal);
+                      },
+                    ),
                   },
                   if (state.selectedSheet == Chatsheetmanage.zero) ...{
                     const SizedBox(height: 30),
+                    StreamBuilder<QueryDocumentSnapshot<Map<String, dynamic>>?>(
+                      stream: getActiveDealStream(),
+                      builder: (context, snapshot) {
+                        if (!snapshot.hasData || snapshot.data == null) {
+                          return const SizedBox();
+                        }
+
+                        final deal = snapshot.data!.data(); // ✅ no cast needed
+
+                        return activeDealProgressBar(deal);
+                      },
+                    ),
 
                     /// 🔥 PROFILE + RING
                     Stack(
