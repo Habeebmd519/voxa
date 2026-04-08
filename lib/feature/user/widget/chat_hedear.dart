@@ -18,106 +18,157 @@ class ChatHeader extends StatelessWidget {
       bottom: false,
       // top: false,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-        child: Row(
-          children: [
-            /// 🔙 BACK BUTTON
-            GestureDetector(
-              onTap: () {
-                context.read<SheetCubit>().openUsers();
-                context.read<ChatsheetmanageCubit>().changeSheet(
-                  Chatsheetmanage.half,
-                );
-              },
-              child: Container(
-                height: 42,
-                width: 42,
-                decoration: const BoxDecoration(
-                  color: Color(0xFF4F7F2F),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.arrow_back, color: Colors.white),
-              ),
-            ),
-
-            const SizedBox(width: 12),
-
-            /// 👤 USER INFO
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    user.name,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                    ),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.35),
+            borderRadius: BorderRadius.circular(18),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              GestureDetector(
+                onTap: () {
+                  context.read<SheetCubit>().openUsers();
+                  context.read<ChatsheetmanageCubit>().changeSheet(
+                    Chatsheetmanage.half,
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
                   ),
+                  child: const Icon(Icons.arrow_back, size: 18),
+                ),
+              ),
 
-                  /// 🔥 REALTIME STATUS
-                  StreamBuilder<DocumentSnapshot>(
-                    stream: FirebaseFirestore.instance
-                        .collection('users')
-                        .doc(user.uid)
-                        .snapshots(),
-                    builder: (context, snapshot) {
-                      if (!snapshot.hasData) {
-                        return const SizedBox();
-                      }
+              const SizedBox(width: 10),
 
-                      final data =
-                          snapshot.data!.data() as Map<String, dynamic>?;
+              /// 👤 AVATAR
+              CircleAvatar(
+                radius: 28,
+                backgroundColor: Colors.white,
+                backgroundImage:
+                    user.photoUrl != null && user.photoUrl!.isNotEmpty
+                    ? NetworkImage(user.photoUrl!)
+                    : null,
+                child: user.photoUrl == null || user.photoUrl!.isEmpty
+                    ? Text(
+                        user.name[0].toUpperCase(),
+                        style: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      )
+                    : null,
+              ),
 
-                      final isOnline = data?['isOnline'] ?? false;
-                      final lastSeen = data?['lastSeen'] as Timestamp?;
+              const SizedBox(width: 12),
 
-                      String status;
+              /// 🧠 USER INFO
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    /// NAME + VERIFIED
+                    Row(
+                      children: [
+                        Text(
+                          user.name,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        if (user.isEmailVerified)
+                          Icon(Icons.verified, color: Colors.green, size: 16),
+                      ],
+                    ),
 
-                      if (isOnline) {
-                        status = "Online";
-                      } else if (lastSeen != null) {
-                        status =
-                            "Last seen ${DateFormat('h:mm a').format(lastSeen.toDate())}";
-                      } else {
-                        status = "Offline";
-                      }
+                    const SizedBox(height: 4),
 
-                      return Row(
-                        children: [
-                          if (isOnline)
-                            Container(
-                              width: 6,
-                              height: 6,
-                              margin: const EdgeInsets.only(right: 4),
-                              decoration: const BoxDecoration(
-                                color: Colors.green,
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                          Text(
-                            status,
+                    /// DOMAIN + EXP
+                    Text(
+                      "${user.domain ?? "Developer"} • ${user.exp ?? "0"}+ yrs",
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.black.withOpacity(0.6),
+                      ),
+                    ),
+
+                    const SizedBox(height: 6),
+
+                    /// RATING + STATUS
+                    Row(
+                      children: [
+                        Icon(Icons.star, size: 14, color: Colors.orange),
+                        const SizedBox(width: 4),
+                        Text(
+                          user.rating.toStringAsFixed(1),
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          "(${user.reviewCount})",
+                          style: const TextStyle(fontSize: 11),
+                        ),
+
+                        const SizedBox(width: 10),
+
+                        /// AVAILABILITY
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: user.isAvailable
+                                ? Colors.green.withOpacity(0.2)
+                                : Colors.red.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            user.isAvailable ? "Available" : "Busy",
                             style: TextStyle(
-                              fontSize: 12,
-                              color: isOnline ? Colors.green : Colors.grey,
+                              fontSize: 10,
+                              color: user.isAvailable
+                                  ? Colors.green
+                                  : Colors.red,
                             ),
                           ),
-                        ],
-                      );
-                    },
-                  ),
-                ],
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
 
-            /// 📞 ACTIONS (optional)
-            Row(
-              children: [
-                IconButton(icon: const Icon(Icons.call), onPressed: () {}),
-                IconButton(icon: const Icon(Icons.videocam), onPressed: () {}),
-              ],
-            ),
-          ],
+              /// 👉 VIEW PROFILE BUTTON
+              GestureDetector(
+                onTap: () {
+                  // expand to full profile
+                  context.read<ChatsheetmanageCubit>().changeSheet(
+                    Chatsheetmanage.zero,
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Text("View", style: TextStyle(fontSize: 11)),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

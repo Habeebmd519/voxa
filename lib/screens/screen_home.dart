@@ -558,49 +558,22 @@ class ScreenHome extends StatelessWidget {
     ShowChat state,
     ChatsheetmanageState SheetState,
   ) {
-    double getHeight(BuildContext context, ChatsheetmanageState state) {
-      final screenHeight = MediaQuery.of(context).size.height;
-      final safeTop = MediaQuery.of(context).padding.top;
-      final safeBottom = MediaQuery.of(context).padding.bottom;
+    // double getHeight(BuildContext context, ChatsheetmanageState state) {
+    //   final screenHeight = MediaQuery.of(context).size.height;
+    //   final safeTop = MediaQuery.of(context).padding.top;
+    //   final safeBottom = MediaQuery.of(context).padding.bottom;
 
-      final usableHeight = screenHeight - safeTop - safeBottom;
-      // final usableHeight = screenHeight;
-
-      switch (state.selectedSheet) {
-        case Chatsheetmanage.half:
-          return usableHeight * 0.21; // 🔥 adaptive
-
-        case Chatsheetmanage.zero:
-          return usableHeight * 0.65; // 🔥 adaptive
-
-        default:
-          return 0;
-      }
-    }
+    //   final usableHeight = screenHeight - safeTop - safeBottom;
+    //   // final usableHeight = screenHeight;
+    // }
 
     return Column(
       children: [
-        AnimatedContainer(
-          duration: Duration(milliseconds: 350),
-          curve: Curves.easeInOut,
-          height: getHeight(context, SheetState),
-        ),
-
-        if (SheetState.selectedSheet == Chatsheetmanage.zero)
-          Expanded(
-            child: Center(
-              child: InkWell(
-                onTap: () {
-                  context.read<ChatsheetmanageCubit>().changeSheet(
-                    Chatsheetmanage.half,
-                  );
-                },
-                child: const BouncingArrow(),
-              ),
-            ),
-          ),
-
-        if (SheetState.selectedSheet != Chatsheetmanage.zero) ...{
+        if (SheetState.selectedSheet == Chatsheetmanage.zero) ...{
+          ChatProfileBackground(user: state.user),
+        },
+        if (SheetState.selectedSheet == Chatsheetmanage.half) ...{
+          ChatHeader(user: state.user),
           Expanded(
             child: AnimatedBottomContent(
               contentKey: const ValueKey("chat_sheet"),
@@ -720,61 +693,6 @@ class ScreenHome extends StatelessWidget {
 
   //     return const SizedBox();
   //   }
-}
-
-class BouncingArrow extends StatefulWidget {
-  const BouncingArrow({super.key});
-
-  @override
-  State<BouncingArrow> createState() => _BouncingArrowState();
-}
-
-class _BouncingArrowState extends State<BouncingArrow>
-    with SingleTickerProviderStateMixin {
-  late AnimationController controller;
-  late Animation<double> animation;
-
-  @override
-  void initState() {
-    super.initState();
-
-    controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 800),
-    )..repeat(reverse: true);
-
-    animation = Tween<double>(
-      begin: 0,
-      end: -10,
-    ).animate(CurvedAnimation(parent: controller, curve: Curves.easeInOut));
-  }
-
-  @override
-  void dispose() {
-    controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: controller,
-      builder: (context, child) {
-        return Transform.translate(
-          offset: Offset(0, animation.value),
-          child: child,
-        );
-      },
-      child: CircleAvatar(
-        backgroundColor: Color.fromARGB(255, 79, 127, 47),
-        child: const Icon(
-          Icons.keyboard_arrow_up,
-          size: 40,
-          color: Color.fromARGB(255, 175, 218, 111),
-        ),
-      ),
-    );
-  }
 }
 
 // // ── _ProfileHeroCard ───────────────────────────────────────────────────────
