@@ -1,13 +1,11 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:voxa/feature/auth/data/model/user_model.dart';
 import 'package:voxa/feature/task/bottomSheet/cubit/sheet_cubit.dart';
-import 'package:voxa/feature/task/bottomSheet/cubit/sheet_state.dart';
+
 import 'package:voxa/feature/task/chatSheetManagemnt/chatSheetManage.dart';
 import 'package:voxa/feature/task/chatSheetManagemnt/chatSheetMangemetState.dart';
-import 'package:voxa/feature/user/utils/chat_utils.dart';
 
 class ChatProfileBackground extends StatefulWidget {
   final UserModel user;
@@ -27,6 +25,8 @@ class _ChatProfileBackgroundState extends State<ChatProfileBackground> {
     return BlocBuilder<ChatsheetmanageCubit, ChatsheetmanageState>(
       builder: (context, state) {
         return Container(
+          // This ensures the gradient fills the available width
+          width: double.infinity,
           decoration: const BoxDecoration(
             gradient: LinearGradient(
               colors: [Color(0xFFB5D96A), Color(0xFF9FCC5A)],
@@ -36,166 +36,92 @@ class _ChatProfileBackgroundState extends State<ChatProfileBackground> {
           ),
           child: SafeArea(
             child: SingleChildScrollView(
+              // 2. Added physics to ensure smooth scrolling in the sheet
+              physics: const BouncingScrollPhysics(),
               child: Column(
                 children: [
-                  if (state.selectedSheet == Chatsheetmanage.half) ...{
-                    _topBarSction(widget.user),
-                    SizedBox(height: 20),
-                    Container(height: 40, decoration: BoxDecoration()),
-                  },
-                  if (state.selectedSheet == Chatsheetmanage.zero) ...{
-                    const SizedBox(height: 30),
+                  // const SizedBox(height: 30),
 
-                    /// 🔥 PROFILE + RING
-                    Stack(
-                      alignment: Alignment.center,
+                  /// 🔥 PROFILE + RING
+                  // _buildProfieAvatr(),
+                  // const SizedBox(height: 16),
+
+                  /// NAME
+                  // Text(
+                  //   widget.user.name,
+                  //   style: const TextStyle(
+                  //     fontSize: 22,
+                  //     fontWeight: FontWeight.w700,
+                  //     color: Colors.black,
+                  //   ),
+                  // ),
+
+                  // const SizedBox(height: 6),
+
+                  // /// TAGLINE / DOMAIN
+                  // Text(
+                  //   widget.user.place ?? "Not Available",
+                  //   style: TextStyle(
+                  //     color: Colors.black.withOpacity(0.6),
+                  //     fontSize: 13,
+                  //   ),
+                  // ),
+
+                  // const SizedBox(height: 14),
+
+                  // /// 🔥 SKILL CHIPS
+                  // Wrap(
+                  //   spacing: 10,
+                  //   runSpacing: 8,
+                  //   children: getIdentityChips(
+                  //     widget.user,
+                  //   ).map((text) => _chip(text)).toList(),
+                  // ),
+                  // const SizedBox(height: 20),
+
+                  /// 🔥 STATS CARD (LIKE YOUR REFERENCE)
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 24),
+                    padding: const EdgeInsets.symmetric(vertical: 18),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        /// OUTER RING
-                        Container(
-                          width: 120,
-                          height: 120,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: Colors.white.withOpacity(0.3),
-                              width: 3,
-                            ),
-                          ),
+                        _StatItem(
+                          value: widget.user.projects.length.toString(),
+                          label: "Projects",
                         ),
-
-                        /// INNER RING (progress feel)
-                        Container(
-                          width: 100,
-                          height: 100,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 2),
-                          ),
+                        _Divider(),
+                        _StatItem(
+                          value: widget.user.rating.toStringAsFixed(1),
+                          label: "Rating",
                         ),
-
-                        /// AVATAR
-                        CircleAvatar(
-                          radius: 42,
-                          backgroundColor: Colors.white,
-                          backgroundImage:
-                              widget.user.photoUrl != null &&
-                                  widget.user.photoUrl!.isNotEmpty
-                              ? NetworkImage(widget.user.photoUrl!)
-                              : null,
-                          child:
-                              widget.user.photoUrl == null ||
-                                  widget.user.photoUrl!.isEmpty
-                              ? Text(
-                                  widget.user.name[0].toUpperCase(),
-                                  style: const TextStyle(
-                                    fontSize: 28,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                )
-                              : null,
-                        ),
-
-                        /// ONLINE DOT
-                        Positioned(
-                          bottom: 10,
-                          right: 10,
-                          child: Container(
-                            width: 14,
-                            height: 14,
-                            decoration: BoxDecoration(
-                              color: Colors.green,
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white, width: 2),
-                            ),
-                          ),
+                        _Divider(),
+                        _StatItem(
+                          value: "${widget.user.completedProjects}",
+                          label: "Completed",
                         ),
                       ],
                     ),
+                  ),
 
-                    const SizedBox(height: 16),
+                  const SizedBox(height: 20),
 
-                    /// NAME
-                    Text(
-                      widget.user.name,
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.black,
-                      ),
-                    ),
-
-                    const SizedBox(height: 6),
-
-                    /// TAGLINE / DOMAIN
-                    Text(
-                      widget.user.place ?? "Not Available",
-                      style: TextStyle(
-                        color: Colors.black.withOpacity(0.6),
-                        fontSize: 13,
-                      ),
-                    ),
-
-                    const SizedBox(height: 14),
-
-                    /// 🔥 SKILL CHIPS
-                    Wrap(
-                      spacing: 10,
-                      runSpacing: 8,
-                      children: getIdentityChips(
-                        widget.user,
-                      ).map((text) => _chip(text)).toList(),
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    /// 🔥 STATS CARD (LIKE YOUR REFERENCE)
-                    Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 24),
-                      padding: const EdgeInsets.symmetric(vertical: 18),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.5),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          _StatItem(
-                            value: widget.user.projects.length.toString(),
-                            label: "Projects",
-                          ),
-                          _Divider(),
-                          _StatItem(
-                            value: widget.user.rating.toStringAsFixed(1),
-                            label: "Rating",
-                          ),
-                          _Divider(),
-                          _StatItem(
-                            value: "${widget.user.completedProjects}",
-                            label: "Completed",
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    /// 🔥 SECTION CARDS (NOT FLAT ANYMORE)
-                    _sectionCard(
-                      0,
-                      Icons.star_border,
-                      "Credibility",
-                      widget.user,
-                    ),
-                    _sectionCard(1, Icons.work_outline, "Work", widget.user),
-                    _sectionCard(
-                      2,
-                      Icons.flash_on,
-                      "Availability",
-                      widget.user,
-                    ),
-                    _sectionCard(3, Icons.memory, "Skills", widget.user),
-                    SizedBox(height: 150),
-                  },
+                  /// 🔥 SECTION CARDS (NOT FLAT ANYMORE)
+                  _sectionCard(
+                    0,
+                    Icons.star_border,
+                    "Credibility",
+                    widget.user,
+                  ),
+                  _sectionCard(1, Icons.work_outline, "Work", widget.user),
+                  _sectionCard(2, Icons.flash_on, "Availability", widget.user),
+                  _sectionCard(3, Icons.memory, "Skills", widget.user),
+                  // Keep the bottom padding so content isn't hidden by the sheet
+                  const SizedBox(height: 120),
                 ],
               ),
             ),
@@ -205,107 +131,149 @@ class _ChatProfileBackgroundState extends State<ChatProfileBackground> {
     );
   }
 
+  // /// top profile avatar build
+  // Widget _buildProfieAvatr() {
+  //   return Stack(
+  //     alignment: Alignment.center,
+  //     children: [
+  //       /// OUTER RING
+  //       Container(
+  //         width: 120,
+  //         height: 120,
+  //         decoration: BoxDecoration(
+  //           shape: BoxShape.circle,
+  //           border: Border.all(color: Colors.white.withOpacity(0.3), width: 3),
+  //         ),
+  //       ),
+
+  //       /// INNER RING (progress feel)
+  //       Container(
+  //         width: 100,
+  //         height: 100,
+  //         decoration: BoxDecoration(
+  //           shape: BoxShape.circle,
+  //           border: Border.all(color: Colors.white, width: 2),
+  //         ),
+  //       ),
+
+  //       /// AVATAR
+  //       CircleAvatar(
+  //         radius: 42,
+  //         backgroundColor: Colors.white,
+  //         backgroundImage:
+  //             widget.user.photoUrl != null && widget.user.photoUrl!.isNotEmpty
+  //             ? NetworkImage(widget.user.photoUrl!)
+  //             : null,
+  //         child: widget.user.photoUrl == null || widget.user.photoUrl!.isEmpty
+  //             ? Text(
+  //                 widget.user.name[0].toUpperCase(),
+  //                 style: const TextStyle(
+  //                   fontSize: 28,
+  //                   fontWeight: FontWeight.bold,
+  //                 ),
+  //               )
+  //             : null,
+  //       ),
+
+  //       /// ONLINE DOT
+  //       Positioned(
+  //         bottom: 10,
+  //         right: 10,
+  //         child: Container(
+  //           width: 14,
+  //           height: 14,
+  //           decoration: BoxDecoration(
+  //             color: Colors.green,
+  //             shape: BoxShape.circle,
+  //             border: Border.all(color: Colors.white, width: 2),
+  //           ),
+  //         ),
+  //       ),
+  //     ],
+  //   );
+  // }
+
   //getIdentityChips
-  List<String> getIdentityChips(UserModel user) {
-    List<String> chips = [];
-
-    /// 1. DOMAIN (primary identity)
-    if (user.domain != null && user.domain!.isNotEmpty) {
-      chips.add(user.domain!);
-    }
-
-    /// 2. ROLE (only if different)
-    if (user.role != null &&
-        user.role!.isNotEmpty &&
-        user.role != user.domain) {
-      chips.add(user.role!);
-    }
-
-    /// 3. EXPERIENCE (formatted)
-    if (user.exp != null && user.exp!.isNotEmpty) {
-      chips.add("${user.exp}+ Years");
-    }
-
-    return chips;
-  }
-
-  /// CHIP
-  Widget _chip(String text) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.4),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(text, style: const TextStyle(fontSize: 12)),
-    );
-  }
 
   /// SECTION CARD
   Widget _sectionCard(int index, IconData icon, String title, UserModel user) {
     final isExpanded = expandedIndex == index;
 
-    return AnimatedContainer(
-      duration: Duration(milliseconds: 300),
-      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.4),
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Column(
-        children: [
-          GestureDetector(
-            onTap: () {
-              setState(() {
-                expandedIndex = isExpanded ? null : index;
-              });
-            },
-            child: Row(
-              children: [
-                CircleAvatar(
-                  backgroundColor: Colors.white,
-                  child: Icon(icon, color: Colors.black),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    title,
-                    style: const TextStyle(fontWeight: FontWeight.w600),
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.0, end: 1.0),
+      duration: Duration(milliseconds: 400 + (index * 100)),
+      curve: Curves.easeOutQuint,
+      builder: (context, value, child) {
+        return Opacity(
+          opacity: value,
+          child: Transform.translate(
+            offset: Offset(0, 30 * (1 - value)), // Slides up 30 pixels
+            child: child,
+          ),
+        );
+      },
+      child: AnimatedContainer(
+        duration: Duration(milliseconds: 300),
+        margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.4),
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Column(
+          children: [
+            GestureDetector(
+              onTap: () {
+                setState(() {
+                  expandedIndex = isExpanded ? null : index;
+                });
+              },
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    backgroundColor: Colors.white,
+                    child: Icon(icon, color: Colors.black),
                   ),
-                ),
-                AnimatedRotation(
-                  duration: Duration(milliseconds: 300),
-                  turns: isExpanded ? 0.5 : 0.0,
-                  child: const Icon(Icons.keyboard_arrow_down),
-                ),
-              ],
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                  AnimatedRotation(
+                    duration: Duration(milliseconds: 300),
+                    turns: isExpanded ? 0.5 : 0.0,
+                    child: const Icon(Icons.keyboard_arrow_down),
+                  ),
+                ],
+              ),
             ),
-          ),
 
-          /// 🔥 EXPAND CONTENT
-          AnimatedCrossFade(
-            duration: Duration(milliseconds: 300),
-            crossFadeState: isExpanded
-                ? CrossFadeState.showFirst
-                : CrossFadeState.showSecond,
-            firstChild: Column(
-              children: [
-                SizedBox(height: 12),
-                Divider(),
-                SizedBox(height: 8),
-                if (index == 0) _buildCredibility(user),
-                if (index == 1) _buildWork(user),
-                if (index == 2) _buildAvailability(user),
-                if (index == 3) _buildSkills(user),
+            /// 🔥 EXPAND CONTENT
+            AnimatedCrossFade(
+              duration: Duration(milliseconds: 300),
+              crossFadeState: isExpanded
+                  ? CrossFadeState.showFirst
+                  : CrossFadeState.showSecond,
+              firstChild: Column(
+                children: [
+                  SizedBox(height: 12),
+                  Divider(),
+                  SizedBox(height: 8),
+                  if (index == 0) _buildCredibility(user),
+                  if (index == 1) _buildWork(user),
+                  if (index == 2) _buildAvailability(user),
+                  if (index == 3) _buildSkills(user),
 
-                /// 🔥 TEMP CONTENT (MVP)
-                // Text("Coming soon...", style: TextStyle(color: Colors.black54)),
-              ],
+                  /// 🔥 TEMP CONTENT (MVP)
+                  // Text("Coming soon...", style: TextStyle(color: Colors.black54)),
+                ],
+              ),
+              secondChild: SizedBox(),
             ),
-            secondChild: SizedBox(),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

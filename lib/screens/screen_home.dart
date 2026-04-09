@@ -25,6 +25,8 @@ import 'package:voxa/feature/user/bloc/UserCubit.dart';
 import 'package:voxa/feature/user/bloc/UserState.dart';
 import 'package:voxa/feature/user/screen/chat_behind_screen.dart';
 import 'package:voxa/feature/user/screen/chat_screen.dart';
+import 'package:voxa/feature/user/utils/behind_screen_flow.dart/behind_sccreen_flow.dart';
+import 'package:voxa/feature/user/widget/behind_top_swction.dart';
 import 'package:voxa/feature/user/widget/chat_hedear.dart';
 
 class ScreenHome extends StatelessWidget {
@@ -570,7 +572,22 @@ class ScreenHome extends StatelessWidget {
     return Column(
       children: [
         if (SheetState.selectedSheet == Chatsheetmanage.zero) ...{
-          ChatProfileBackground(user: state.user),
+          // BehindSccreenFlow(
+          //   user: state.user,
+          //   state: state,
+          //   SheetState: SheetState,
+          // ),
+          buildProfieAvatr(user: state.user),
+          Expanded(
+            child: AnimatedBottomContent(
+              contentKey: const ValueKey("chat_behind_sheet"),
+              child: BehindSccreenFlow(
+                user: state.user,
+                SheetState: SheetState,
+                state: state,
+              ),
+            ),
+          ),
         },
         if (SheetState.selectedSheet == Chatsheetmanage.half) ...{
           ChatHeader(user: state.user),

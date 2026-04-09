@@ -41,7 +41,7 @@ class _BouncingArrowState extends State<BouncingArrow>
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        context.read<SheetCubit>().openUsers();
+        // context.read<SheetCubit>().openUsers();
         context.read<ChatsheetmanageCubit>().changeSheet(Chatsheetmanage.half);
       },
       child: AnimatedBuilder(
