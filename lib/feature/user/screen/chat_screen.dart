@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:voxa/core/hive/pressentation/models/user_hive_model.dart';
 import 'package:voxa/feature/auth/data/model/user_model.dart';
 import 'package:voxa/feature/chat/chat_cubit/chat_cubit.dart';
 import 'package:voxa/feature/task/bottomSheet/cubit/sheet_cubit.dart';
@@ -246,7 +247,7 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   // ── Send message ───────────────────────────
-  void sendMessage(String currentUserId) {
+  void sendMessage(String currentUserId) async {
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
     context.read<ChatCubitt>().sendMessage(
@@ -255,6 +256,8 @@ class _ChatScreenState extends State<ChatScreen> {
       text: text,
       currentUserId: currentUserId,
     );
+    HiveServices hiveServices = HiveServices();
+    await hiveServices.saveOrUpdateUser(widget.receiverUser, text);
     _messageController.clear();
   }
 

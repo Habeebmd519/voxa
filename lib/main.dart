@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import 'package:google_fonts/google_fonts.dart';
+import 'package:hive_flutter/adapters.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:voxa/feature/auth/presentation/blocs/buttonAnm_bloc/button_bloc.dart';
@@ -18,6 +19,7 @@ import 'package:voxa/feature/auth/presentation/cubits/premuim_button_cubit/premi
 import 'package:voxa/feature/chat/Repositories/chat_repository/chat_repository.dart';
 import 'package:voxa/feature/chat/chat_cubit/chat_cubit.dart';
 import 'package:voxa/feature/profile/screens/cubit/edit_cubit.dart';
+import 'package:voxa/feature/search_from_firebase/bloc/searchCubit.dart';
 
 import 'package:voxa/feature/task/bottomSheet/cubit/sheet_cubit.dart';
 import 'package:voxa/feature/task/chatSheetManagemnt/chatSheetManage.dart';
@@ -32,6 +34,8 @@ import 'package:voxa/feature/auth/presentation/screens/screen_login.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  await Hive.initFlutter();
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   // await dotenv.load(fileName: ".env");
@@ -81,6 +85,7 @@ class MyApp extends StatelessWidget {
             );
           },
         ),
+        BlocProvider(create: (_) => SearchCubit()),
       ],
       child: MaterialApp(
         theme: ThemeData(textTheme: GoogleFonts.montserratTextTheme()),

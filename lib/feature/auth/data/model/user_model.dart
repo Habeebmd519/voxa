@@ -40,6 +40,9 @@ class UserModel {
   // skill
   final List<String> skills;
 
+  // search key words of every users
+  final List<String> searchKeywords;
+
   UserModel({
     required this.uid,
     required this.email,
@@ -73,6 +76,8 @@ class UserModel {
 
     //skill
     this.skills = const [],
+
+    this.searchKeywords = const [],
   });
 
   /// FROM FIRESTORE
@@ -126,6 +131,7 @@ class UserModel {
       isRemote: map['isRemote'] ?? true,
       // skill
       skills: List<String>.from(map['skills'] ?? []),
+      searchKeywords: List<String>.from(map['searchKeywords'] ?? []),
     );
   }
 
@@ -167,6 +173,7 @@ class UserModel {
       'isRemote': isRemote,
       // skill
       'skills': skills,
+      'searchKeywords': searchKeywords,
     };
   }
 
@@ -203,6 +210,7 @@ class UserModel {
     bool? isRemote,
     //skill
     List<String>? skills,
+    final List<String>? searchKeywords,
   }) {
     return UserModel(
       uid: uid ?? this.uid,
@@ -237,6 +245,8 @@ class UserModel {
 
       ///
       skills: skills ?? this.skills,
+      //
+      searchKeywords: searchKeywords ?? this.searchKeywords,
     );
   }
 }

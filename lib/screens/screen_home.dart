@@ -11,6 +11,8 @@ import 'package:voxa/core/shimmer_loading/shimmer_loading.dart';
 import 'package:voxa/core/widgets/bottom_content.dart';
 import 'package:voxa/feature/auth/data/model/user_model.dart';
 import 'package:voxa/feature/profile/screens/profile_screen.dart';
+import 'package:voxa/feature/search_from_firebase/bloc/searchCubit.dart';
+import 'package:voxa/feature/search_from_firebase/bloc/searchState.dart';
 
 import 'package:voxa/feature/task/bottomSheet/cubit/sheet_cubit.dart';
 import 'package:voxa/feature/task/bottomSheet/cubit/sheet_state.dart';
@@ -55,7 +57,7 @@ class ScreenHome extends StatelessWidget {
                                     SheetState2,
                                   ))
                           : index == 1
-                          ? _buildAudioSection(context)
+                          ? _buildSearchSection(context, SheetState2)
                           : index == 2
                           ? _buildVideoSction()
                           : index == 3
@@ -176,101 +178,121 @@ class ScreenHome extends StatelessWidget {
   /////////////////////////////////////////////////////
   ////.    ADIO SECTION     //////////////////////////
   ////////////////////////////////////////////////////
+  Widget _buildSearchSection(
+    BuildContext context,
 
-  Widget _buildAudioSection(BuildContext context) {
+    ChatsheetmanageState SheetState,
+  ) {
+    final controller = TextEditingController(text: '');
+    // final currentUserId = FirebaseAuth.instance.currentUser!.uid;
+
     return Column(
       children: [
+        /// 🔍 SEARCH BARX$
         Padding(
           padding: const EdgeInsets.all(8.0),
-          child: Row(
-            children: [
-              Expanded(
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(16),
-                  onTap: () {
-                    String callId = FirebaseFirestore.instance
-                        .collection('calls')
-                        .doc()
-                        .id;
-
-                    context.read<CallCubit>().startCall(callId);
+          child: Container(
+            height: 48,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(30),
+            ),
+            child: TextField(
+              controller: controller,
+              key: const ValueKey("search_global"),
+              onChanged: (value) {
+                context.read<SearchCubit>().onSearchChanged(value);
+              },
+              decoration: InputDecoration(
+                hintText: "Search people...",
+                prefixIcon: const Icon(Icons.search, size: 22),
+                suffixIcon: IconButton(
+                  icon: const Icon(Icons.clear, size: 20),
+                  onPressed: () {
+                    controller.clear();
+                    context.read<SearchCubit>().clear();
                   },
-
-                  //                    () {
-                  //                     // TODO: walky-talky action
-
-                  //   String callId =
-                  //       FirebaseFirestore.instance.collection('calls').doc().id;
-
-                  //   context.read<CallCubit>().startCall(callId);
-                  // }
-                  child: Container(
-                    width: double.infinity,
-                    height: 180,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: Colors.white.withOpacity(0.35),
-                        width: 1.5,
-                      ),
-                      boxShadow: [
-                        // outer shadow (separation from bg)
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.15),
-                          blurRadius: 12,
-                          offset: const Offset(0, 6),
-                        ),
-                        // inner light effect
-                        BoxShadow(
-                          color: Colors.white.withOpacity(0.25),
-                          blurRadius: 6,
-                          offset: const Offset(0, -3),
-                        ),
-                      ],
-                      color: const Color.fromARGB(255, 175, 218, 111),
-                      image: const DecorationImage(
-                        image: AssetImage("assets/walkyTalkyBg.png"),
-                        fit: BoxFit.cover,
-                        opacity: 0.25, // important: avoids overpowering text
-                      ),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        HugeIcon(
-                          icon: HugeIcons.strokeRoundedMic01,
-                          size: 56,
-                          color: Colors.white,
-                        ),
-                        // Icon(
-                        //   Icons.mic_external_on,
-                        //   size: 48,
-                        //   color: Colors.white,
-                        // ),
-                        SizedBox(height: 8),
-                        Text(
-                          "Walky Talky",
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                 ),
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(vertical: 14),
               ),
-            ],
+            ),
           ),
         ),
+
+        const SizedBox(height: 10),
+
+        /// 📂 CONTENT
         Expanded(
           child: AnimatedBottomContent(
-            contentKey: ValueKey("audio_sheet"),
-            child: ListView.builder(
-              itemCount: 10,
-              itemBuilder: (context, i) {
-                return const ListTile(title: Text("History"));
+            contentKey: const ValueKey("search_sheet"),
+            child: BlocBuilder<SearchCubit, SearchState>(
+              builder: (context, state) {
+                /// 🟢 INITIAL
+                if (state is SearchInitial) {
+                  return const Center(
+                    child: Text("Search people to start chatting"),
+                  );
+                }
+
+                /// 🔄 LOADING
+                if (state is SearchLoading) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                /// ❌ EMPTY
+                if (state is SearchEmpty) {
+                  return const Center(child: Text("No users found"));
+                }
+
+                /// ✅ SUCCESS
+                if (state is SearchSuccess) {
+                  final users = state.users;
+
+                  return ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    itemCount: users.length,
+                    itemBuilder: (context, i) {
+                      final user = users[i];
+                      final myId = FirebaseAuth.instance.currentUser!.uid;
+
+                      return ListTile(
+                        leading: CircleAvatar(
+                          radius: 22,
+                          backgroundImage: user.photoUrl != null
+                              ? NetworkImage(user.photoUrl!)
+                              : null,
+                          backgroundColor: Colors.grey,
+                          child: user.photoUrl == null
+                              ? Text(user.name[0].toUpperCase())
+                              : null,
+                        ),
+                        title: Text(
+                          user.name,
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        subtitle: Text(
+                          user.domain ?? user.email,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        trailing: user.isPro
+                            ? const Icon(Icons.star, color: Colors.amber)
+                            : const Icon(Icons.north_west),
+
+                        onTap: () {
+                          // 1. Switch to chat tab
+                          HomeNavController.index.value = 0;
+
+                          // 2. Open chat
+                          context.read<SheetCubit>().openChat(user);
+                        },
+                      );
+                    },
+                  );
+                }
+
+                return const SizedBox();
               },
             ),
           ),
@@ -378,8 +400,7 @@ class ScreenHome extends StatelessWidget {
                             : const SizedBox(key: ValueKey("empty")),
                       ),
                     ),
-                  if (mode == TopMode.add) const Spacer(),
-
+                  if (mode == TopMode.add) Spacer(),
                   AnimatedContainer(
                     curve: Curves.easeInOutQuart,
                     duration: Duration(milliseconds: 400),
@@ -1136,119 +1157,3 @@ class _VerticalDivider extends StatelessWidget {
     return Container(width: 1, color: Colors.white.withOpacity(0.2));
   }
 }
-
-// ── _ProfileSheetContent (goes inside AnimatedBottomContent) ──────────────
-
-// class _ProfileSheetContent extends StatelessWidget {
-//   final ProfileLoaded state;
-//   final String uid;
-//   const _ProfileSheetContent({required this.state, required this.uid});
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return ListView(
-//       padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-//       children: [
-//         // Drag handle
-//         Center(
-//           child: Container(
-//             width: 36,
-//             height: 4,
-//             margin: const EdgeInsets.only(top: 10, bottom: 20),
-//             decoration: BoxDecoration(
-//               color: Colors.grey.shade300,
-//               borderRadius: BorderRadius.circular(2),
-//             ),
-//           ),
-//         ),
-
-//         _ProfileField(label: "NAME", value: state.name),
-//         _ProfileField(label: "EMAIL", value: state.email),
-//         _ProfileField(label: "PASSWORD", value: "••••••••"),
-//         _ProfileField(label: "USER ID", value: uid.substring(0, 8)),
-
-//         const SizedBox(height: 24),
-
-//         // Logout button
-//         SizedBox(
-//           width: double.infinity,
-//           height: 50,
-//           child: OutlinedButton(
-//             onPressed: () {
-//               // logout logic
-//             },
-//             style: OutlinedButton.styleFrom(
-//               foregroundColor: const Color(0xFF7B2FBE),
-//               side: const BorderSide(color: Color(0xFF7B2FBE), width: 1.5),
-//               shape: RoundedRectangleBorder(
-//                 borderRadius: BorderRadius.circular(14),
-//               ),
-//             ),
-//             child: const Text(
-//               "Logout",
-//               style: TextStyle(
-//                 fontSize: 15,
-//                 fontWeight: FontWeight.w600,
-//                 color: Color(0xFF7B2FBE),
-//               ),
-//             ),
-//           ),
-//         ),
-
-//         const SizedBox(height: 20),
-//       ],
-//     );
-//   }
-// }
-
-// // // ── _ProfileField ──────────────────────────────────────────────────────────
-// class _ProfileField extends StatelessWidget {
-//   final String label;
-//   final String value;
-
-//   const _ProfileField({required this.label, required this.value});
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Container(
-//       height: 50, // fixed height for uniform look
-//       margin: const EdgeInsets.only(bottom: 14),
-//       padding: const EdgeInsets.symmetric(horizontal: 18),
-//       decoration: BoxDecoration(
-//         color: const Color(0xFFEFF5F0), // softer grey
-//         borderRadius: BorderRadius.circular(15),
-//       ),
-//       child: Row(
-//         children: [
-//           // LEFT LABEL
-//           Text(
-//             label,
-//             style: const TextStyle(
-//               fontSize: 13,
-//               color: Color(0xFF9E9E9E), // lighter grey
-//               fontWeight: FontWeight.w500, // not bold
-//               letterSpacing: 1.2, // spacing like design
-//             ),
-//           ),
-
-//           const Spacer(),
-
-//           // RIGHT VALUE
-//           Expanded(
-//             flex: 2,
-//             child: Text(
-//               value,
-//               textAlign: TextAlign.right,
-//               overflow: TextOverflow.ellipsis,
-//               style: const TextStyle(
-//                 fontSize: 12,
-//                 fontWeight: FontWeight.w500, // medium, not bold
-//                 color: Color(0xFF2C2C2C),
-//               ),
-//             ),
-//           ),
-//         ],
-//       ),
-//     );
-//   }
-// }

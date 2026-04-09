@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -89,6 +90,18 @@ class PremiumAnimatedButton extends StatelessWidget {
       return true;
     }
 
+    /// genarate key searching key words
+    List<String> generateKeywords(String text) {
+      final lower = text.toLowerCase();
+      List<String> keywords = [];
+
+      for (int i = 0; i < lower.length; i++) {
+        keywords.add(lower.substring(0, i + 1));
+      }
+
+      return keywords;
+    }
+
     return BlocBuilder<PremiumButtonCubit, PremiumButtonState>(
       builder: (context, state) {
         final cubit = context.read<PremiumButtonCubit>();
@@ -139,6 +152,32 @@ class PremiumAnimatedButton extends StatelessWidget {
                   Future.delayed(const Duration(seconds: 2), () {
                     _authService.saveOneSignalId();
                   });
+                  final ref = await FirebaseFirestore.instance
+                      .collection('users')
+                      .doc(user.uid)
+                      .get();
+
+                  final data = ref.data();
+
+                  if (data != null) {
+                    final keywords = data['searchKeywords'];
+
+                    if (keywords == null || (keywords as List).isEmpty) {
+                      final name = data['name'] ?? "";
+                      final email = data['email'] ?? "";
+
+                      final newKeywords = [
+                        ...generateKeywords(name),
+                        ...generateKeywords(email),
+                      ];
+
+                      await ref.reference.update({
+                        'searchKeywords': newKeywords,
+                      });
+
+                      print("🔥 Keywords generated for old user");
+                    }
+                  }
                 }
 
                 _showSnack(context, "Login success! UID: ${user?.uid}");
@@ -166,6 +205,14 @@ class PremiumAnimatedButton extends StatelessWidget {
                   Future.delayed(const Duration(seconds: 2), () {
                     _authService.saveOneSignalId();
                   });
+                  final keywords = [
+                    ...generateKeywords(name),
+                    ...generateKeywords(email),
+                  ];
+                  await FirebaseFirestore.instance
+                      .collection('users')
+                      .doc(user.uid)
+                      .update({'searchKeywords': keywords});
                 }
 
                 _showSnack(context, "Sign up success! UID: ${user?.uid}");

@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:voxa/core/navigation/home_nav_controller.dart';
 import 'package:voxa/feature/task/top_toggle_system/enum.dart';
 
 class TopBarCubit extends Cubit<TopMode> {
@@ -8,6 +9,8 @@ class TopBarCubit extends Cubit<TopMode> {
 
   void showAdd() {
     emit(TopMode.add);
+    HomeNavController.setIndex = 1;
+    emit(TopMode.normal);
   }
 
   Future<void> closeAdd() async {
