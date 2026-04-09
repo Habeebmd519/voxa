@@ -48,22 +48,25 @@ class ChatHeader extends StatelessWidget {
               const SizedBox(width: 10),
 
               /// 👤 AVATAR
-              CircleAvatar(
-                radius: 28,
-                backgroundColor: Colors.white,
-                backgroundImage:
-                    user.photoUrl != null && user.photoUrl!.isNotEmpty
-                    ? NetworkImage(user.photoUrl!)
-                    : null,
-                child: user.photoUrl == null || user.photoUrl!.isEmpty
-                    ? Text(
-                        user.name[0].toUpperCase(),
-                        style: const TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      )
-                    : null,
+              Hero(
+                tag: 'profile_${user.uid}',
+                child: CircleAvatar(
+                  radius: 28,
+                  backgroundColor: Colors.white,
+                  backgroundImage:
+                      user.photoUrl != null && user.photoUrl!.isNotEmpty
+                      ? NetworkImage(user.photoUrl!)
+                      : null,
+                  child: user.photoUrl == null || user.photoUrl!.isEmpty
+                      ? Text(
+                          user.name[0].toUpperCase(),
+                          style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        )
+                      : null,
+                ),
               ),
 
               const SizedBox(width: 12),

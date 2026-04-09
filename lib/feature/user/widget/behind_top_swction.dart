@@ -1,9 +1,33 @@
 import 'package:flutter/material.dart';
 import 'package:voxa/feature/auth/data/model/user_model.dart';
 
-class buildProfieAvatr extends StatelessWidget {
+class buildProfieAvatr extends StatefulWidget {
   UserModel user;
   buildProfieAvatr({required this.user});
+
+  @override
+  State<buildProfieAvatr> createState() => _buildProfieAvatrState();
+}
+
+class _buildProfieAvatrState extends State<buildProfieAvatr>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 10),
+    )..repeat(); // Keep it spinning slowly
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -16,51 +40,74 @@ class buildProfieAvatr extends StatelessWidget {
             alignment: Alignment.center,
             children: [
               /// OUTER RING
-              Container(
-                width: 120,
-                height: 120,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: Colors.white.withOpacity(0.3),
-                    width: 3,
-                  ),
-                ),
+              TweenAnimationBuilder<double>(
+                tween: Tween(begin: 1.0, end: 1.1),
+                duration: const Duration(seconds: 2),
+                curve: Curves.easeInOut,
+                builder: (context, value, child) {
+                  return Transform.scale(
+                    scale: value,
+                    child: Container(
+                      width: 120,
+                      height: 120,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.3),
+                          width: 3,
+                        ),
+                      ),
+                    ),
+                  );
+                },
               ),
 
-              /// INNER RING (progress feel)
-              Container(
-                width: 100,
-                height: 100,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 2),
+              RotationTransition(
+                turns: _controller,
+                child: Container(
+                  width: 105,
+                  height: 105,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Colors.white,
+                      width: 2,
+                      style: BorderStyle.solid,
+                    ),
+                  ),
+                  // Optional: Use a CustomPainter here for a dashed line effect
                 ),
               ),
 
               /// AVATAR
-              CircleAvatar(
-                radius: 42,
-                backgroundColor: Colors.white,
-                backgroundImage:
-                    user.photoUrl != null && user.photoUrl!.isNotEmpty
-                    ? NetworkImage(user.photoUrl!)
-                    : null,
-                child: user.photoUrl == null || user.photoUrl!.isEmpty
-                    ? Text(
-                        user.name[0].toUpperCase(),
-                        style: const TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      )
-                    : null,
+              Hero(
+                tag: 'profile_${widget.user.uid}',
+                child: CircleAvatar(
+                  radius: 42,
+                  backgroundColor: Colors.white,
+                  backgroundImage:
+                      widget.user.photoUrl != null &&
+                          widget.user.photoUrl!.isNotEmpty
+                      ? NetworkImage(widget.user.photoUrl!)
+                      : null,
+                  child:
+                      widget.user.photoUrl == null ||
+                          widget.user.photoUrl!.isEmpty
+                      ? Text(
+                          widget.user.name[0].toUpperCase(),
+                          style: const TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        )
+                      : null,
+                ),
               ),
 
               /// ONLINE DOT
               Positioned(
-                bottom: 10,
-                right: 10,
+                bottom: 8,
+                right: 8,
                 child: Container(
                   width: 14,
                   height: 14,
@@ -73,8 +120,9 @@ class buildProfieAvatr extends StatelessWidget {
               ),
             ],
           ),
+          SizedBox(height: 12),
           Text(
-            user.name,
+            widget.user.name,
             style: const TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.w700,
@@ -86,7 +134,7 @@ class buildProfieAvatr extends StatelessWidget {
 
           /// TAGLINE / DOMAIN
           Text(
-            user.place ?? "Not Available",
+            widget.user.place ?? "Not Available",
             style: TextStyle(
               color: Colors.black.withOpacity(0.6),
               fontSize: 13,
@@ -100,7 +148,7 @@ class buildProfieAvatr extends StatelessWidget {
             spacing: 10,
             runSpacing: 8,
             children: getIdentityChips(
-              user,
+              widget.user,
             ).map((text) => _chip(text)).toList(),
           ),
         ],
