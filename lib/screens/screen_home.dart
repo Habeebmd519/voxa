@@ -600,47 +600,6 @@ class ScreenHome extends StatelessWidget {
         },
       ],
     );
-
-    // Stack(
-    //   children: [
-    //     /// 🔥 BACKGROUND → PROFILE SHOWCASE
-    //     ChatProfileBackground(user: state.user),
-
-    //     /// 🔥 FOREGROUND → CHAT SHEET SYSTEM
-    //     Column(
-    //       children: [
-    //         AnimatedContainer(
-    //           duration: Duration(milliseconds: 350),
-    //           curve: Curves.easeInOut,
-    //           height: getHeight(context, SheetState),
-    //         ),
-
-    //         if (SheetState.selectedSheet == Chatsheetmanage.zero)
-    //           Expanded(
-    //             child: Center(
-    //               child: InkWell(
-    //                 onTap: () {
-    //                   context.read<ChatsheetmanageCubit>().changeSheet(
-    //                     Chatsheetmanage.half,
-    //                   );
-    //                 },
-    //                 child: const BouncingArrow(),
-    //               ),
-    //             ),
-    //           ),
-
-    //         if (SheetState.selectedSheet != Chatsheetmanage.zero) ...{
-    //           Expanded(
-    //             child: AnimatedBottomContent(
-    //               contentKey: const ValueKey("chat_sheet"),
-    //               child: ChatScreen(receiverUser: state.user),
-    //             ),
-    //           ),
-    //         },
-    //       ],
-    //     ),
-    //   ],
-    // );
   }
 
   /////////////////////////////////////////////////////

@@ -403,30 +403,42 @@ class _ChatProfileBackgroundState extends State<ChatProfileBackground> {
   }
 
   // Credibility build
-
   Widget _buildCredibility(UserModel user) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text("⭐ ${user.rating} (${user.reviewCount} reviews)"),
-        SizedBox(height: 6),
-        Text("📁 ${user.completedProjects} Projects Completed"),
-        SizedBox(height: 6),
+        /// Rating
+        Row(
+          children: [
+            const Icon(Icons.star, color: Colors.orange, size: 18),
+            const SizedBox(width: 6),
+            Text(
+              "${user.rating.toStringAsFixed(2)} (${user.reviewCount} reviews)",
+              style: const TextStyle(fontSize: 14),
+            ),
+          ],
+        ),
 
-        if (user.badges.isNotEmpty)
-          Wrap(
-            spacing: 6,
-            children: user.badges.map((b) {
-              return Chip(label: Text(b));
-            }).toList(),
-          ),
+        const SizedBox(height: 8),
 
-        SizedBox(height: 8),
+        /// Projects
+        Row(
+          children: [
+            const Icon(Icons.folder, size: 18, color: Colors.black54),
+            const SizedBox(width: 6),
+            Text(
+              "${user.completedProjects} Projects Completed",
+              style: const TextStyle(fontSize: 14),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 10),
 
         Row(
           children: [
-            if (user.isEmailVerified) _miniBadge(Icons.verified, "Email"),
-            if (user.isPhoneVerified) _miniBadge(Icons.phone, "Phone"),
+            if (user.isEmailVerified) _badge(Icons.verified_rounded, "Email"),
+            if (user.isPhoneVerified) _badge(Icons.phone_rounded, "Phone"),
             if (user.isPro) _proBadge(),
           ],
         ),
@@ -434,22 +446,36 @@ class _ChatProfileBackgroundState extends State<ChatProfileBackground> {
     );
   }
 
-  Widget _miniBadge(IconData icon, String label) {
+  Widget _badge(IconData icon, String label) {
     return Container(
-      margin: const EdgeInsets.only(right: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      margin: const EdgeInsets.only(right: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.6),
-        borderRadius: BorderRadius.circular(20),
+        gradient: LinearGradient(
+          colors: [
+            Colors.white.withOpacity(0.9),
+            Colors.white.withOpacity(0.6),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(30),
+        border: Border.all(color: Colors.black.withOpacity(0.05)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: Colors.green.shade700),
-          const SizedBox(width: 4),
+          Container(
+            height: 18,
+            width: 18,
+            decoration: BoxDecoration(
+              color: Colors.green.withOpacity(0.15),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, size: 12, color: Colors.green.shade700),
+          ),
+          const SizedBox(width: 6),
           Text(
             label,
-            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
           ),
         ],
       ),

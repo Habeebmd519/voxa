@@ -10,6 +10,9 @@ import 'package:voxa/feature/auth/data/model/user_model.dart';
 import 'package:voxa/feature/chat/chat_cubit/chat_cubit.dart';
 import 'package:voxa/feature/task/bottomSheet/cubit/sheet_cubit.dart';
 import 'package:voxa/feature/task/bottomSheet/cubit/sheet_state.dart';
+import 'package:voxa/feature/user/screen/chat_screen_shimmer_loading.dart';
+import 'package:voxa/feature/user/widget/quckle_dialog.dart';
+import 'package:voxa/feature/user/widget/show_premuim_dialog.dart';
 
 import '../utils/chat_utils.dart';
 
@@ -142,23 +145,103 @@ class _ChatScreenState extends State<ChatScreen> {
   void showDeleteDialog(BuildContext context, String dealId, String dealTitle) {
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text("Delete Deal"),
-        content: const Text("Are you sure?"),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
+      barrierDismissible: true,
+      builder: (context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.9),
+              borderRadius: BorderRadius.circular(28),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Title
+                const Text(
+                  "Delete Deal",
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87,
+                  ),
+                ),
+
+                const SizedBox(height: 12),
+
+                // Subtitle
+                const Text(
+                  "Are you sure?",
+                  style: TextStyle(fontSize: 15, color: Colors.black54),
+                ),
+
+                const SizedBox(height: 24),
+
+                // Buttons
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    // Cancel
+                    GestureDetector(
+                      onTap: () => Navigator.pop(context),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Text(
+                          "Cancel",
+                          style: TextStyle(
+                            color: Color(0xFF4F7F2F),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    // Delete
+                    GestureDetector(
+                      onTap: () {
+                        deleteDeal(dealId, dealTitle);
+                        Navigator.pop(context);
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Text(
+                          "Delete",
+                          style: TextStyle(
+                            color: Colors.red,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
-          TextButton(
-            onPressed: () {
-              deleteDeal(dealId, dealTitle);
-              Navigator.pop(context);
-            },
-            child: const Text("Delete", style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -255,9 +338,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       builder: (context, chatSnapshot) {
                         if (chatSnapshot.connectionState ==
                             ConnectionState.waiting) {
-                          return const Center(
-                            child: CircularProgressIndicator(),
-                          );
+                          return const Center(child: ChatShimmer());
                         }
                         if (chatSnapshot.hasError) {
                           return Center(
@@ -332,7 +413,6 @@ class _ChatScreenState extends State<ChatScreen> {
                                 }
                                 if (data['type'] == 'premium_deal') {
                                   return premiumDealCard(
-                                    index,
                                     data,
                                     chatId,
                                     currentUser.uid,
@@ -688,7 +768,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   );
                   return;
                 }
-                _showCreateDealDialog(context, receiverId);
+                showQuickDealDialog(context, chatId);
               },
             ),
             _dealOption(
@@ -715,7 +795,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
                   return;
                 }
-                _showPremiumDealDialog(context, receiverId);
+                showPremiumDealDialog(context, chatId, receiverId);
               },
             ),
           ],
@@ -818,150 +898,149 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  void _showPremiumDealDialog(BuildContext context, String receiverId) {
-    final titleCtrl = TextEditingController();
-    final descCtrl = TextEditingController();
-    List<Map<String, dynamic>> milestones = [];
-    DateTime? endDate;
-    showDialog(
-      context: context,
-      builder: (_) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: const Text("Premium Deal"),
-          content: SingleChildScrollView(
-            child: Column(
-              children: [
-                TextField(
-                  controller: titleCtrl,
-                  decoration: const InputDecoration(labelText: "Title"),
-                ),
-                TextField(
-                  controller: descCtrl,
-                  decoration: const InputDecoration(labelText: "Description"),
-                ),
-                TextButton(
-                  onPressed: () async {
-                    final picked = await showDatePicker(
-                      context: context,
-                      initialDate: DateTime.now().add(const Duration(days: 1)),
-                      firstDate: DateTime.now(),
-                      lastDate: DateTime(2100),
-                    );
-                    if (picked != null) setState(() => endDate = picked);
-                  },
-                  child: Text(
-                    endDate == null
-                        ? "Select Deadline"
-                        : DateFormat('dd MMM').format(endDate!),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                ElevatedButton(
-                  onPressed: () {
-                    final mTitle = TextEditingController();
-                    final mAmount = TextEditingController();
-                    showDialog(
-                      context: context,
-                      builder: (_) => AlertDialog(
-                        title: const Text("Add Milestone"),
-                        content: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            TextField(
-                              controller: mTitle,
-                              decoration: const InputDecoration(
-                                labelText: "Title",
-                              ),
-                            ),
-                            TextField(
-                              controller: mAmount,
-                              keyboardType: TextInputType.number,
-                              decoration: const InputDecoration(
-                                labelText: "Amount",
-                              ),
-                            ),
-                          ],
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context),
-                            child: const Text("Cancel"),
-                          ),
-                          ElevatedButton(
-                            onPressed: () {
-                              setState(() {
-                                milestones.add({
-                                  "title": mTitle.text,
-                                  "amount": int.parse(mAmount.text),
-                                  "status": "pending",
-                                  "deadline": endDate?.toIso8601String(),
-                                  "startDate": null,
-                                });
-                              });
-                              Navigator.pop(context);
-                            },
-                            child: const Text("Add"),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                  child: const Text("Add Milestone"),
-                ),
-                Column(
-                  children: milestones
-                      .map(
-                        (m) => ListTile(
-                          title: Text(m['title']),
-                          trailing: Text("₹${m['amount']}"),
-                        ),
-                      )
-                      .toList(),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Cancel"),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                final docRef = FirebaseFirestore.instance
-                    .collection('chats')
-                    .doc(chatId)
-                    .collection('messages')
-                    .doc();
-                final total = milestones.fold<int>(
-                  0,
-                  (sum, m) => sum + (m['amount'] as int),
-                );
-                await docRef.set({
-                  "id": docRef.id,
-                  "type": "premium_deal",
-                  "title": titleCtrl.text,
-                  "description": descCtrl.text,
-                  "totalPrice": total,
-                  "milestones": milestones,
-                  "deadline": endDate?.toIso8601String(),
-                  "startDate": null,
-                  "status": "pending",
-                  "senderId": currentUser.uid,
-                  "timestamp": FieldValue.serverTimestamp(),
-                });
-                Navigator.pop(context);
-              },
-              child: const Text("Send Deal"),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  // void _showPremiumDealDialog(BuildContext context, String receiverId) {
+  //   final titleCtrl = TextEditingController();
+  //   final descCtrl = TextEditingController();
+  //   List<Map<String, dynamic>> milestones = [];
+  //   DateTime? endDate;
+  //   showDialog(
+  //     context: context,
+  //     builder: (_) => StatefulBuilder(
+  //       builder: (context, setState) => AlertDialog(
+  //         title: const Text("Premium Deal"),
+  //         content: SingleChildScrollView(
+  //           child: Column(
+  //             children: [
+  //               TextField(
+  //                 controller: titleCtrl,
+  //                 decoration: const InputDecoration(labelText: "Title"),
+  //               ),
+  //               TextField(
+  //                 controller: descCtrl,
+  //                 decoration: const InputDecoration(labelText: "Description"),
+  //               ),
+  //               TextButton(
+  //                 onPressed: () async {
+  //                   final picked = await showDatePicker(
+  //                     context: context,
+  //                     initialDate: DateTime.now().add(const Duration(days: 1)),
+  //                     firstDate: DateTime.now(),
+  //                     lastDate: DateTime(2100),
+  //                   );
+  //                   if (picked != null) setState(() => endDate = picked);
+  //                 },
+  //                 child: Text(
+  //                   endDate == null
+  //                       ? "Select Deadline"
+  //                       : DateFormat('dd MMM').format(endDate!),
+  //                 ),
+  //               ),
+  //               const SizedBox(height: 10),
+  //               ElevatedButton(
+  //                 onPressed: () {
+  //                   final mTitle = TextEditingController();
+  //                   final mAmount = TextEditingController();
+  //                   showDialog(
+  //                     context: context,
+  //                     builder: (_) => AlertDialog(
+  //                       title: const Text("Add Milestone"),
+  //                       content: Column(
+  //                         mainAxisSize: MainAxisSize.min,
+  //                         children: [
+  //                           TextField(
+  //                             controller: mTitle,
+  //                             decoration: const InputDecoration(
+  //                               labelText: "Title",
+  //                             ),
+  //                           ),
+  //                           TextField(
+  //                             controller: mAmount,
+  //                             keyboardType: TextInputType.number,
+  //                             decoration: const InputDecoration(
+  //                               labelText: "Amount",
+  //                             ),
+  //                           ),
+  //                         ],
+  //                       ),
+  //                       actions: [
+  //                         TextButton(
+  //                           onPressed: () => Navigator.pop(context),
+  //                           child: const Text("Cancel"),
+  //                         ),
+  //                         ElevatedButton(
+  //                           onPressed: () {
+  //                             setState(() {
+  //                               milestones.add({
+  //                                 "title": mTitle.text,
+  //                                 "amount": int.parse(mAmount.text),
+  //                                 "status": "pending",
+  //                                 "deadline": endDate?.toIso8601String(),
+  //                                 "startDate": null,
+  //                               });
+  //                             });
+  //                             Navigator.pop(context);
+  //                           },
+  //                           child: const Text("Add"),
+  //                         ),
+  //                       ],
+  //                     ),
+  //                   );
+  //                 },
+  //                 child: const Text("Add Milestone"),
+  //               ),
+  //               Column(
+  //                 children: milestones
+  //                     .map(
+  //                       (m) => ListTile(
+  //                         title: Text(m['title']),
+  //                         trailing: Text("₹${m['amount']}"),
+  //                       ),
+  //                     )
+  //                     .toList(),
+  //               ),
+  //             ],
+  //           ),
+  //         ),
+  //         actions: [
+  //           TextButton(
+  //             onPressed: () => Navigator.pop(context),
+  //             child: const Text("Cancel"),
+  //           ),
+  //           ElevatedButton(
+  //             onPressed: () async {
+  //               final docRef = FirebaseFirestore.instance
+  //                   .collection('chats')
+  //                   .doc(chatId)
+  //                   .collection('messages')
+  //                   .doc();
+  //               final total = milestones.fold<int>(
+  //                 0,
+  //                 (sum, m) => sum + (m['amount'] as int),
+  //               );
+  //               await docRef.set({
+  //                 "id": docRef.id,
+  //                 "type": "premium_deal",
+  //                 "title": titleCtrl.text,
+  //                 "description": descCtrl.text,
+  //                 "totalPrice": total,
+  //                 "milestones": milestones,
+  //                 "deadline": endDate?.toIso8601String(),
+  //                 "startDate": null,
+  //                 "status": "pending",
+  //                 "senderId": currentUser.uid,
+  //                 "timestamp": FieldValue.serverTimestamp(),
+  //               });
+  //               Navigator.pop(context);
+  //             },
+  //             child: const Text("Send Deal"),
+  //           ),
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
 
   Widget premiumDealCard(
-    int? index,
     Map<String, dynamic> deal,
     String chatId,
     String currentUserId,
@@ -1140,6 +1219,193 @@ class _ChatScreenState extends State<ChatScreen> {
               const Text(
                 "Waiting for response ⏳",
                 style: TextStyle(color: Colors.grey),
+              ),
+            if (status == "active")
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: Colors.green.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Text(
+                  "Deal in progress 🚀",
+                  style: TextStyle(color: Colors.green),
+                ),
+              ),
+            if (status == "completed")
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Text(
+                  "Completed ✅",
+                  style: TextStyle(color: Colors.blue),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ══════════════════════════════════════════════
+  //  Firestore helpers (your originals, unchanged)
+  // ══════════════════════════════════════════════
+  Widget dealCard(
+    Map<String, dynamic> deal,
+    String chatID,
+    String currentUserId,
+  ) {
+    final status = deal['status'];
+    final start = deal['startDate'] != null
+        ? DateFormat('dd MMM').format(DateTime.parse(deal['startDate']))
+        : "Not started";
+    final end = deal['deadline'] != null
+        ? DateFormat('dd MMM').format(DateTime.parse(deal['deadline']))
+        : "-";
+    Color statusColor;
+    if (status == "pending") {
+      statusColor = Colors.orange;
+    } else if (status == "active") {
+      statusColor = Colors.green;
+    } else {
+      statusColor = Colors.blue;
+    }
+
+    return GestureDetector(
+      onLongPress: () {
+        if (deal['senderId'] == currentUserId) {
+          showDeleteDialog(context, deal['id'], deal['title']);
+        }
+      },
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+          border: Border.all(color: Colors.grey.shade200),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.work, color: Colors.green, size: 18),
+                ),
+                const SizedBox(width: 8),
+                const Text(
+                  "Deal Proposal",
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                ),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: statusColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    status.toUpperCase(),
+                    style: TextStyle(
+                      color: statusColor,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              deal['title'],
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              "₹ ${deal['price']}",
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: Colors.green,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                const Icon(Icons.calendar_today, size: 12, color: Colors.grey),
+                const SizedBox(width: 4),
+                Text(
+                  start,
+                  style: const TextStyle(fontSize: 11, color: Colors.grey),
+                ),
+                const SizedBox(width: 12),
+                const Icon(Icons.flag, size: 12, color: Colors.grey),
+                const SizedBox(width: 4),
+                Text(
+                  end,
+                  style: const TextStyle(fontSize: 11, color: Colors.grey),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            if (status == "pending" && deal['senderId'] == currentUserId)
+              const Text(
+                "Waiting for response ⏳",
+                style: TextStyle(color: Colors.grey),
+              ),
+            if (status == "pending" && deal['senderId'] != currentUserId)
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => acceptDeal(chatID, deal['id']),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text("Accept"),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => rejectDeal(chatID, deal['id']),
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(color: Colors.red.shade300),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        "Reject",
+                        style: TextStyle(color: Colors.red),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             if (status == "active")
               Container(
@@ -1356,180 +1622,6 @@ class _SelectionToolbar extends StatelessWidget {
       ),
     );
   }
-}
-
-// ══════════════════════════════════════════════
-//  Firestore helpers (your originals, unchanged)
-// ══════════════════════════════════════════════
-Widget dealCard(
-  Map<String, dynamic> deal,
-  String chatID,
-  String currentUserId,
-) {
-  final status = deal['status'];
-  final start = deal['startDate'] != null
-      ? DateFormat('dd MMM').format(DateTime.parse(deal['startDate']))
-      : "Not started";
-  final end = deal['deadline'] != null
-      ? DateFormat('dd MMM').format(DateTime.parse(deal['deadline']))
-      : "-";
-  Color statusColor;
-  if (status == "pending") {
-    statusColor = Colors.orange;
-  } else if (status == "active") {
-    statusColor = Colors.green;
-  } else {
-    statusColor = Colors.blue;
-  }
-
-  return Container(
-    margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-    padding: const EdgeInsets.all(14),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(18),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.06),
-          blurRadius: 10,
-          offset: const Offset(0, 4),
-        ),
-      ],
-      border: Border.all(color: Colors.grey.shade200),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.green.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(Icons.work, color: Colors.green, size: 18),
-            ),
-            const SizedBox(width: 8),
-            const Text(
-              "Deal Proposal",
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-            ),
-            const Spacer(),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: statusColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                status.toUpperCase(),
-                style: TextStyle(
-                  color: statusColor,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Text(
-          deal['title'],
-          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          "₹ ${deal['price']}",
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-            color: Colors.green,
-          ),
-        ),
-        const SizedBox(height: 10),
-        Row(
-          children: [
-            const Icon(Icons.calendar_today, size: 12, color: Colors.grey),
-            const SizedBox(width: 4),
-            Text(
-              start,
-              style: const TextStyle(fontSize: 11, color: Colors.grey),
-            ),
-            const SizedBox(width: 12),
-            const Icon(Icons.flag, size: 12, color: Colors.grey),
-            const SizedBox(width: 4),
-            Text(end, style: const TextStyle(fontSize: 11, color: Colors.grey)),
-          ],
-        ),
-        const SizedBox(height: 14),
-        if (status == "pending" && deal['senderId'] == currentUserId)
-          const Text(
-            "Waiting for response ⏳",
-            style: TextStyle(color: Colors.grey),
-          ),
-        if (status == "pending" && deal['senderId'] != currentUserId)
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: () => acceptDeal(chatID, deal['id']),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: const Text("Accept"),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () => rejectDeal(chatID, deal['id']),
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: Colors.red.shade300),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: const Text(
-                    "Reject",
-                    style: TextStyle(color: Colors.red),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        if (status == "active")
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: Colors.green.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Text(
-              "Deal in progress 🚀",
-              style: TextStyle(color: Colors.green),
-            ),
-          ),
-        if (status == "completed")
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: Colors.blue.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Text(
-              "Completed ✅",
-              style: TextStyle(color: Colors.blue),
-            ),
-          ),
-      ],
-    ),
-  );
 }
 
 Future<void> acceptDeal(String chatId, String dealId) async {

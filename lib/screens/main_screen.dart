@@ -355,8 +355,8 @@ class _MainScreenState extends State<MainScreen> {
                       unselectedIcon: Icons.chat_bubble_outline,
                     ),
                     CrystalNavigationBarItem(
-                      icon: Icons.settings_voice_rounded,
-                      unselectedIcon: Icons.settings_voice_outlined,
+                      icon: Icons.search_sharp,
+                      unselectedIcon: Icons.search,
                     ),
                     CrystalNavigationBarItem(
                       icon: Icons.video_call_rounded,
