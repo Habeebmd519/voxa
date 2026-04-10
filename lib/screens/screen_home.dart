@@ -25,6 +25,7 @@ import 'package:voxa/feature/task/top_toggle_system/cubit/cubit.dart';
 import 'package:voxa/feature/task/top_toggle_system/enum.dart';
 import 'package:voxa/feature/user/bloc/UserCubit.dart';
 import 'package:voxa/feature/user/bloc/UserState.dart';
+import 'package:voxa/feature/user/bloc/current_user_cubit.dart';
 import 'package:voxa/feature/user/screen/chat_behind_screen.dart';
 import 'package:voxa/feature/user/screen/chat_screen.dart';
 import 'package:voxa/feature/user/utils/behind_screen_flow.dart/behind_sccreen_flow.dart';
@@ -440,7 +441,13 @@ class ScreenHome extends StatelessWidget {
                 if (state is UserLoaded) {
                   // final users = state.users;
 
-                  final currentUserId = FirebaseAuth.instance.currentUser!.uid;
+                  final currentUser = context.watch<CurrentUserCubit>().state;
+
+                  if (currentUser == null) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
+                  final currentUserId = currentUser.uid;
 
                   final users = state.users
                       .where((u) => u.uid != currentUserId)
@@ -463,7 +470,6 @@ class ScreenHome extends StatelessWidget {
                       if (!snapshot.hasData) {
                         return const Center(child: CircularProgressIndicator());
                       }
-
                       final data =
                           snapshot.data!.data() as Map<String, dynamic>;
                       final unreadMap =
@@ -475,8 +481,6 @@ class ScreenHome extends StatelessWidget {
                             const Divider(height: 1, color: Color(0xFFAFDA6F)),
                         itemBuilder: (context, i) {
                           final user = users[i]; // This is already a UserModel
-                          final currentUserId =
-                              FirebaseAuth.instance.currentUser!.uid;
 
                           final myUnread = unreadMap[user.uid] ?? 0;
                           // //////
@@ -535,12 +539,16 @@ class ScreenHome extends StatelessWidget {
                               ),
                             ),
                             onTap: () {
+                              final user = users[i]; // UserHiveModel
                               FirebaseFirestore.instance
                                   .collection('users')
                                   .doc(currentUserId)
                                   .update({'unreadCount.${user.uid}': 0});
                               // FIX: Pass 'user' directly, removed .user
-                              context.read<SheetCubit>().openChat(user);
+
+                              context.read<SheetCubit>().openChat(
+                                user.toUserModel(), // ✅ convert here
+                              );
                             },
                             trailing:
                                 (myUnread >

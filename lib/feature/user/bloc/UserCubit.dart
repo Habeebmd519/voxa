@@ -1,38 +1,43 @@
-import 'dart:async';
-
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:hive_flutter/adapters.dart';
+import 'package:voxa/core/hive/pressentation/models/user_hive_model.dart';
 import 'package:voxa/feature/user/bloc/UserState.dart';
-import 'package:voxa/feature/user/service/UserRepository.dart';
 
 class UserCubit extends Cubit<UserState> {
-  final UserRepository repository;
+  UserCubit() : super(UserLoading());
 
-  UserCubit(this.repository) : super(UserInitial());
+  final HiveServices hiveServices = HiveServices();
 
-  StreamSubscription? _sub;
+  void loadUsers() {
+    final users = hiveServices.box.values.toList();
 
-  void listenUsers() {
-    emit(UserLoading());
-
-    _sub?.cancel();
-
-    _sub = repository.getUsersStream().listen(
-      (users) {
-        if (users.isEmpty) {
-          emit(UserEmpty());
-        } else {
-          emit(UserLoaded(users));
-        }
-      },
-      onError: (e) {
-        emit(UserError(e.toString()));
-      },
-    );
+    if (users.isEmpty) {
+      emit(UserEmpty());
+    } else {
+      emit(UserLoaded(users));
+    }
   }
 
-  @override
-  Future<void> close() {
-    _sub?.cancel();
-    return super.close();
+  // ✅ ADD THIS METHOD
+  void listenUsers() {
+    // ✅ FIRST: emit current data
+    final users = hiveServices.box.values.toList();
+
+    if (users.isEmpty) {
+      emit(UserEmpty());
+    } else {
+      emit(UserLoaded(users));
+    }
+
+    // ✅ THEN: listen for changes
+    hiveServices.box.listenable().addListener(() {
+      final users = hiveServices.box.values.toList();
+
+      if (users.isEmpty) {
+        emit(UserEmpty());
+      } else {
+        emit(UserLoaded(users));
+      }
+    });
   }
 }

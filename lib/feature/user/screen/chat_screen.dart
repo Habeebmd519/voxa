@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
 import 'package:voxa/core/hive/pressentation/models/user_hive_model.dart';
 import 'package:voxa/feature/auth/data/model/user_model.dart';
@@ -28,7 +29,7 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _messageController = TextEditingController();
-  final currentUser = FirebaseAuth.instance.currentUser!;
+  // final currentUser = FirebaseAuth.instance.currentUser!;
   final firestore = FirebaseFirestore.instance;
 
   late String chatId;
@@ -40,14 +41,22 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   void initState() {
     super.initState();
+
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) return; // ✅ just return (no null)
+
     chatId = generateChatId(currentUser.uid, widget.receiverUser.uid);
+
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+
       await _ensureChatExists();
+
+      context.read<ChatCubitt>().markChatAsRead(
+        chatId: chatId,
+        receiverId: widget.receiverUser.uid,
+      );
     });
-    context.read<ChatCubitt>().markChatAsRead(
-      chatId: chatId,
-      receiverId: widget.receiverUser.uid,
-    );
   }
 
   // ── Selection helpers ──────────────────────
@@ -258,13 +267,20 @@ class _ChatScreenState extends State<ChatScreen> {
     );
     HiveServices hiveServices = HiveServices();
     await hiveServices.saveOrUpdateUser(widget.receiverUser, text);
+    await hiveServices.saveOrUpdateUser(widget.receiverUser, text);
+
+    print("✅ SAVED: ${widget.receiverUser.uid}");
+    print("📦 BOX DATA: ${Hive.box<UserHiveModel>('users').values.toList()}");
     _messageController.clear();
   }
 
   // ── Build ──────────────────────────────────
   @override
   Widget build(BuildContext context) {
-    final currentUserId = FirebaseAuth.instance.currentUser!.uid;
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return const SizedBox();
+
+    final currentUserId = user.uid;
 
     return BlocBuilder<SheetCubit, SheetState>(
       builder: (context, state) {
@@ -286,10 +302,12 @@ class _ChatScreenState extends State<ChatScreen> {
                   // ── Online status ─────────────────────────
                   Center(
                     child: StreamBuilder<DocumentSnapshot>(
-                      stream: FirebaseFirestore.instance
-                          .collection('users')
-                          .doc(widget.receiverUser.uid)
-                          .snapshots(),
+                      stream: user == null
+                          ? null
+                          : FirebaseFirestore.instance
+                                .collection('users')
+                                .doc(widget.receiverUser.uid)
+                                .snapshots(),
                       builder: (context, snapshot) {
                         if (!snapshot.hasData) return const SizedBox();
                         final data =
@@ -334,10 +352,12 @@ class _ChatScreenState extends State<ChatScreen> {
                   // ── Message list ──────────────────────────
                   Expanded(
                     child: StreamBuilder<DocumentSnapshot>(
-                      stream: firestore
-                          .collection('chats')
-                          .doc(chatId)
-                          .snapshots(),
+                      stream: user == null
+                          ? null
+                          : firestore
+                                .collection('chats')
+                                .doc(chatId)
+                                .snapshots(),
                       builder: (context, chatSnapshot) {
                         if (chatSnapshot.connectionState ==
                             ConnectionState.waiting) {
@@ -356,12 +376,14 @@ class _ChatScreenState extends State<ChatScreen> {
                         }
 
                         return StreamBuilder<QuerySnapshot>(
-                          stream: firestore
-                              .collection('chats')
-                              .doc(chatId)
-                              .collection('messages')
-                              .orderBy('timestamp', descending: true)
-                              .snapshots(),
+                          stream: user == null
+                              ? null
+                              : firestore
+                                    .collection('chats')
+                                    .doc(chatId)
+                                    .collection('messages')
+                                    .orderBy('timestamp', descending: true)
+                                    .snapshots(),
                           builder: (context, msgSnapshot) {
                             if (msgSnapshot.connectionState ==
                                 ConnectionState.waiting) {
@@ -374,14 +396,35 @@ class _ChatScreenState extends State<ChatScreen> {
                                 child: Text(msgSnapshot.error.toString()),
                               );
                             }
+                            // if (msgSnapshot.hasData &&
+                            //     msgSnapshot.data!.docs.isNotEmpty) {
+                            //   context.read<ChatCubitt>().markChatAsRead(
+                            //     chatId: chatId,
+                            //     receiverId: widget.receiverUser.uid,
+                            //   );
+                            // }
                             if (msgSnapshot.hasData &&
                                 msgSnapshot.data!.docs.isNotEmpty) {
-                              context.read<ChatCubitt>().markChatAsRead(
-                                chatId: chatId,
-                                receiverId: widget.receiverUser.uid,
-                              );
-                            }
+                              final latestMessage =
+                                  msgSnapshot.data!.docs.first;
+                              final data =
+                                  latestMessage.data() as Map<String, dynamic>;
 
+                              final senderId = data['senderId'];
+                              final text = data['text'] ?? '';
+
+                              if (senderId != currentUserId) {
+                                FirebaseFirestore.instance
+                                    .collection('users')
+                                    .doc(senderId)
+                                    .get()
+                                    .then((doc) {
+                                      final sender = UserModel.fromMap(
+                                        doc.data()!,
+                                      );
+                                    });
+                              }
+                            }
                             final messages = msgSnapshot.data!.docs;
                             if (messages.isEmpty) {
                               return const Center(
@@ -393,6 +436,9 @@ class _ChatScreenState extends State<ChatScreen> {
                               reverse: true,
                               itemCount: messages.length,
                               itemBuilder: (context, index) {
+                                final currentUser =
+                                    FirebaseAuth.instance.currentUser;
+                                if (currentUser == null) return SizedBox();
                                 final message = messages[index];
                                 final data =
                                     message.data() as Map<String, dynamic>;
@@ -405,7 +451,9 @@ class _ChatScreenState extends State<ChatScreen> {
                                         'h:mm a',
                                       ).format(timestamp.toDate())
                                     : '';
-
+                                context
+                                    .read<ChatCubitt>()
+                                    .handleIncomingMessage(data);
                                 // Deal cards – untouched
                                 if (data['type'] == 'deal') {
                                   return dealCard(
@@ -723,6 +771,8 @@ class _ChatScreenState extends State<ChatScreen> {
   // ── All your original methods below, untouched ──
 
   Future<void> _ensureChatExists() async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) return;
     final chatRef = firestore.collection('chats').doc(chatId);
     final doc = await chatRef.get();
     if (!doc.exists) {
@@ -875,6 +925,8 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
             ElevatedButton(
               onPressed: () async {
+                final currentUser = FirebaseAuth.instance.currentUser;
+                if (currentUser == null) return;
                 final docRef = FirebaseFirestore.instance
                     .collection('chats')
                     .doc(chatId)

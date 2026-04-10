@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:hive/hive.dart';
 import 'package:voxa/feature/auth/data/model/user_model.dart';
 
@@ -27,50 +28,82 @@ class UserHiveModel extends HiveObject {
     this.lastMessage,
     this.unreadCount = 0,
   });
-}
+  UserHiveModel copyWith({
+    String? uid,
+    String? name,
+    String? photoUrl,
+    String? lastMessage,
+    int? unreadCount,
+  }) {
+    return UserHiveModel(
+      uid: uid ?? this.uid,
+      name: name ?? this.name,
+      photoUrl: photoUrl ?? this.photoUrl,
+      lastMessage: lastMessage ?? this.lastMessage,
+      unreadCount: unreadCount ?? this.unreadCount,
+    );
+  }
 
-final box = Hive.box<UserHiveModel>('users');
+  static UserHiveModel toHive(UserModel user) {
+    return UserHiveModel(
+      uid: user.uid,
+      name: user.name,
+      photoUrl: user.photoUrl,
+      unreadCount: 0,
+    );
+  }
 
-UserHiveModel toHive(UserModel user) {
-  return UserHiveModel(
-    uid: user.uid,
-    name: user.name,
-    photoUrl: user.photoUrl,
-    lastMessage: user.lastMessage,
-    unreadCount: 0,
-  );
+  UserModel toUserModel() {
+    return UserModel(
+      uid: uid,
+      email: '',
+      name: name,
+      phone: '',
+      photoUrl: photoUrl,
+      lastMessage: lastMessage,
+    );
+  }
 }
 
 class HiveServices {
-  Future<void> saveOrUpdateUser(UserModel user, String message) async {
-    final box = Hive.box<UserHiveModel>('users');
+  Box<UserHiveModel> get box {
+    final uid = FirebaseAuth.instance.currentUser!.uid;
 
+    final boxName = 'users_$uid';
+
+    if (!Hive.isBoxOpen(boxName)) {
+      throw Exception("⚠️ Box $boxName not opened yet");
+    }
+
+    return Hive.box<UserHiveModel>(boxName);
+  }
+
+  Future<void> saveOrUpdateUser(UserModel user, String message) async {
     final exists = box.containsKey(user.uid);
 
     if (!exists) {
-      // 🔥 FIRST TIME CHAT
-      final newUser = UserHiveModel(
-        uid: user.uid,
-        name: user.name,
-        photoUrl: user.photoUrl,
-        lastMessage: message,
-        unreadCount: 0,
+      box.put(
+        user.uid,
+        UserHiveModel.toHive(user).copyWith(lastMessage: message),
       );
-
-      box.put(user.uid, newUser);
     } else {
-      // 🔄 UPDATE EXISTING CHAT
       final oldUser = box.get(user.uid)!;
 
-      final updatedUser = UserHiveModel(
-        uid: oldUser.uid,
-        name: oldUser.name,
-        photoUrl: oldUser.photoUrl,
-        lastMessage: message,
-        unreadCount: oldUser.unreadCount,
-      );
-
-      box.put(user.uid, updatedUser);
+      box.put(user.uid, oldUser.copyWith(lastMessage: message));
     }
+  }
+
+  Future<void> incrementUnread(String uid) async {
+    final user = box.get(uid);
+    if (user == null) return;
+
+    box.put(uid, user.copyWith(unreadCount: user.unreadCount + 1));
+  }
+
+  Future<void> clearUnread(String uid) async {
+    final user = box.get(uid);
+    if (user == null) return;
+
+    box.put(uid, user.copyWith(unreadCount: 0));
   }
 }

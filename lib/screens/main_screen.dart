@@ -1,8 +1,12 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
+import 'package:voxa/core/hive/pressentation/models/user_hive_model.dart';
 
 import 'package:voxa/core/navigation/home_nav_controller.dart';
 import 'package:voxa/core/widgets/bottom_content.dart';
@@ -44,46 +48,83 @@ class _MainScreenState extends State<MainScreen> {
   // late TextEditingController domainCtrl;
 
   // bool _initialized = false;
+  bool isHiveReady = false;
+  StreamSubscription<User?>? _authSub;
   @override
   void initState() {
     super.initState();
 
-    FirebaseAuth.instance.authStateChanges().listen((user) {
+    _authSub = FirebaseAuth.instance.authStateChanges().listen((user) async {
+      if (!mounted) return;
+
+      if (user == null) return; // 🔥 VERY IMPORTANT
       if (user != null) {
-        context.read<UserCubit>().listenUsers();
-        context.read<ProfileCubit>().loadProfile();
+        final uid = user.uid;
+        final boxName = 'users_$uid';
+
+        if (Hive.isBoxOpen(boxName)) {
+          await Hive.box<UserHiveModel>(boxName).close();
+        }
+
+        await Hive.openBox<UserHiveModel>(boxName);
+
+        if (!mounted) return;
+
+        setState(() {
+          isHiveReady = true;
+        });
+
+        // ✅ ✅ ✅ ADD IT RIGHT HERE
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          context.read<UserCubit>().listenUsers();
+          context.read<ProfileCubit>().loadProfile();
+        });
       }
     });
   }
 
   @override
+  void dispose() {
+    _authSub?.cancel(); // 🔥 THIS FIXES EVERYTHING
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     Future<void> _logout(BuildContext context) async {
-      try {
-        await authService.logout();
+      final uid = FirebaseAuth.instance.currentUser?.uid;
 
-        if (!context.mounted) return;
+      // 🔥 1. Close Hive first
+      if (uid != null) {
+        final boxName = 'users_$uid';
+        if (Hive.isBoxOpen(boxName)) {
+          await Hive.box<UserHiveModel>(boxName).close();
+        }
+      }
 
-        ScaffoldMessenger.of(context).showSnackBar(
+      // 🔥 2. LOGOUT FIRST
+      await authService.logout();
+
+      if (!context.mounted) return;
+
+      // 🔥 3. Navigate FIRST (no SnackBar before this)
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => AnimatedLoginScreen()),
+        (route) => false,
+      );
+
+      // 🔥 4. Show snackbar AFTER navigation (safe context)
+      Future.microtask(() {
+        final messenger = ScaffoldMessenger.of(context);
+        messenger.showSnackBar(
           const SnackBar(
             content: Text('Logged out successfully'),
             backgroundColor: Colors.green,
           ),
         );
-
-        // Navigate after logout
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (_) => AnimatedLoginScreen()),
-          (route) => false,
-        );
-      } catch (e) {
-        if (!context.mounted) return;
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
-        );
-      }
+      });
     }
     // final currentUser = FirebaseAuth.instance.currentUser;
     // final uid = currentUser?.uid;
@@ -102,275 +143,286 @@ class _MainScreenState extends State<MainScreen> {
       valueListenable: HomeNavController.index,
       builder: (context, selectedIndex, _) {
         final sheetState = context.watch<SheetCubit>().state;
-        return Scaffold(
-          extendBody: true,
-          appBar: sheetState is ShowChat
-              ? null
-              : AppBar(
-                  surfaceTintColor: Colors.transparent,
-                  centerTitle: true,
+        return Builder(
+          builder: (context) {
+            if (!isHiveReady) {
+              return const Scaffold(
+                body: Center(child: CircularProgressIndicator()),
+              );
+            }
+            return Scaffold(
+              extendBody: true,
+              appBar: sheetState is ShowChat
+                  ? null
+                  : AppBar(
+                      surfaceTintColor: Colors.transparent,
+                      centerTitle: true,
 
-                  backgroundColor: Color.fromARGB(255, 175, 218, 111),
-                  actions: [
-                    if (selectedIndex == 3) ...{
-                      Container(
-                        width: 45,
-                        height: 45,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.5),
-                          shape: BoxShape.circle,
-                        ),
-                        child: IconButton(
-                          onPressed: () {
-                            // final isEditing = context.read<EditCubit>().state;
-
-                            // if (isEditing) {
-                            //   // 🔥 trigger save
-                            //   context.read<ProfileCubit>().updateProfileFromFields();
-                            // }
-
-                            context.read<EditCubit>().toggle();
-                          },
-                          icon: BlocBuilder<EditCubit, bool>(
-                            builder: (context, isEditing) {
-                              return Icon(
-                                isEditing ? Icons.check : Icons.edit,
-                                color: Colors.white,
-                              );
-                            },
-                          ),
-                          color: Colors.white,
-                        ),
-                      ),
-                    },
-                    SizedBox(width: 10),
-                  ],
-                  leading: BlocBuilder<SheetCubit, SheetState>(
-                    builder: (context, state) {
-                      return BlocBuilder<TopBarCubit, TopMode>(
-                        builder: (context, mode) {
-                          IconData icon;
-
-                          // 🎯 PRIORITY 1 → Chat screen
-                          if (state is ShowChat) {
-                            icon = Icons.arrow_back;
-                          }
-                          // 🎯 PRIORITY 2 → Search or Add mode
-                          else if (mode == TopMode.search ||
-                              mode == TopMode.add) {
-                            icon = Icons.close;
-                          }
-                          // 🎯 NORMAL
-                          else {
-                            icon = Icons.menu;
-                          }
-                          return Padding(
-                            padding: const EdgeInsets.all(5.0),
+                      backgroundColor: Color.fromARGB(255, 175, 218, 111),
+                      actions: [
+                        if (selectedIndex == 3) ...{
+                          Container(
+                            width: 45,
+                            height: 45,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.5),
+                              shape: BoxShape.circle,
+                            ),
                             child: IconButton(
-                              style: ButtonStyle(
-                                backgroundColor: MaterialStateProperty.all(
-                                  Color.fromARGB(255, 79, 127, 47),
-                                ),
-                                foregroundColor: MaterialStateProperty.all(
-                                  Colors.white,
-                                ),
-                                shape: MaterialStateProperty.all(
-                                  RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(30),
-                                  ),
-                                ),
-                              ),
-                              icon: AnimatedSwitcher(
-                                duration: Duration(milliseconds: 300),
-                                transitionBuilder: (child, animation) {
-                                  return ScaleTransition(
-                                    scale: animation,
-                                    child: child,
+                              onPressed: () {
+                                // final isEditing = context.read<EditCubit>().state;
+
+                                // if (isEditing) {
+                                //   // 🔥 trigger save
+                                //   context.read<ProfileCubit>().updateProfileFromFields();
+                                // }
+
+                                context.read<EditCubit>().toggle();
+                              },
+                              icon: BlocBuilder<EditCubit, bool>(
+                                builder: (context, isEditing) {
+                                  return Icon(
+                                    isEditing ? Icons.check : Icons.edit,
+                                    color: Colors.white,
                                   );
                                 },
-                                child: Icon(icon),
                               ),
-                              onPressed: () {
-                                if (state is ShowChat) {
-                                  context.read<SheetCubit>().openUsers();
-                                  context.read<ChatsheetmanageCubit>()
-                                    ..changeSheet(Chatsheetmanage.half);
-
-                                  return;
-                                }
-                                if (mode == TopMode.normal) {
-                                  _logout(context);
-                                }
-                                if (mode == TopMode.search) {
-                                  context.read<TopBarCubit>().reset();
-                                }
-                                if (mode == TopMode.add) {
-                                  context.read<TopBarCubit>().closeAdd();
-                                }
-
-                                // if (mode == TopMode.search)
-                              },
+                              color: Colors.white,
                             ),
-                          );
+                          ),
                         },
-                      );
-                    },
-                  ),
-                  title: BlocBuilder<SheetCubit, SheetState>(
-                    builder: (context, state) {
-                      return BlocBuilder<TopBarCubit, TopMode>(
-                        builder: (context, mode) {
-                          if (state is ShowChat) {
-                            return Column(
-                              children: [
-                                Text("${state.user.name}"),
-                                StreamBuilder<DocumentSnapshot>(
-                                  stream: FirebaseFirestore.instance
-                                      .collection('users')
-                                      .doc(state.user.uid)
-                                      .snapshots(),
-                                  builder: (context, snapshot) {
-                                    if (!snapshot.hasData)
-                                      return const SizedBox();
+                        SizedBox(width: 10),
+                      ],
+                      leading: BlocBuilder<SheetCubit, SheetState>(
+                        builder: (context, state) {
+                          return BlocBuilder<TopBarCubit, TopMode>(
+                            builder: (context, mode) {
+                              IconData icon;
 
-                                    final data =
-                                        snapshot.data!.data()
-                                            as Map<String, dynamic>?;
+                              // 🎯 PRIORITY 1 → Chat screen
+                              if (state is ShowChat) {
+                                icon = Icons.arrow_back;
+                              }
+                              // 🎯 PRIORITY 2 → Search or Add mode
+                              else if (mode == TopMode.search ||
+                                  mode == TopMode.add) {
+                                icon = Icons.close;
+                              }
+                              // 🎯 NORMAL
+                              else {
+                                icon = Icons.menu;
+                              }
+                              return Padding(
+                                padding: const EdgeInsets.all(5.0),
+                                child: IconButton(
+                                  style: ButtonStyle(
+                                    backgroundColor: MaterialStateProperty.all(
+                                      Color.fromARGB(255, 79, 127, 47),
+                                    ),
+                                    foregroundColor: MaterialStateProperty.all(
+                                      Colors.white,
+                                    ),
+                                    shape: MaterialStateProperty.all(
+                                      RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(30),
+                                      ),
+                                    ),
+                                  ),
+                                  icon: AnimatedSwitcher(
+                                    duration: Duration(milliseconds: 300),
+                                    transitionBuilder: (child, animation) {
+                                      return ScaleTransition(
+                                        scale: animation,
+                                        child: child,
+                                      );
+                                    },
+                                    child: Icon(icon),
+                                  ),
+                                  onPressed: () {
+                                    if (state is ShowChat) {
+                                      context.read<SheetCubit>().openUsers();
+                                      context.read<ChatsheetmanageCubit>()
+                                        ..changeSheet(Chatsheetmanage.half);
 
-                                    final isOnline = data?['isOnline'] ?? false;
-                                    final lastSeen =
-                                        data?['lastSeen'] as Timestamp?;
-
-                                    String statusText;
-
-                                    if (isOnline) {
-                                      statusText = "Online";
-                                    } else if (lastSeen != null) {
-                                      statusText =
-                                          "Last seen ${DateFormat('h:mm a').format(lastSeen.toDate())}";
-                                    } else {
-                                      statusText = "Offline";
+                                      return;
+                                    }
+                                    if (mode == TopMode.normal) {
+                                      _logout(context);
+                                    }
+                                    if (mode == TopMode.search) {
+                                      context.read<TopBarCubit>().reset();
+                                    }
+                                    if (mode == TopMode.add) {
+                                      context.read<TopBarCubit>().closeAdd();
                                     }
 
-                                    return Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        if (isOnline)
-                                          Container(
-                                            width: 8,
-                                            height: 8,
-                                            margin: const EdgeInsets.only(
-                                              right: 4,
-                                            ),
-                                            decoration: const BoxDecoration(
-                                              color: Colors.green,
-                                              shape: BoxShape.circle,
-                                            ),
-                                          ),
-                                        Text(
-                                          statusText,
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: isOnline
-                                                ? Colors.green
-                                                : Colors.grey,
-                                          ),
-                                        ),
-                                      ],
-                                    );
+                                    // if (mode == TopMode.search)
                                   },
                                 ),
-                              ],
-                            );
-                          }
-                          if (mode == TopMode.search) {
-                            return const Text("Add Users");
-                          }
-
-                          final user = FirebaseAuth.instance.currentUser;
-
-                          if (user == null) {
-                            return const Text("Hi...");
-                          }
-
-                          return FutureBuilder<DocumentSnapshot>(
-                            future: FirebaseFirestore.instance
-                                .collection('users')
-                                .doc(user.uid)
-                                .get(),
-                            builder: (context, snapshot) {
-                              if (snapshot.connectionState ==
-                                  ConnectionState.waiting) {
-                                return const Text("Hi...");
-                              }
-
-                              if (!snapshot.hasData || !snapshot.data!.exists) {
-                                return const Text("Hi...");
-                              }
-
-                              final data =
-                                  snapshot.data!.data()
-                                      as Map<String, dynamic>?;
-                              final userName = data?['name'] ?? '';
-
-                              return Text("Hi, $userName");
+                              );
                             },
                           );
                         },
-                      );
-                    },
-                  ),
-                  titleSpacing: 0,
-                ),
+                      ),
+                      title: BlocBuilder<SheetCubit, SheetState>(
+                        builder: (context, state) {
+                          return BlocBuilder<TopBarCubit, TopMode>(
+                            builder: (context, mode) {
+                              if (state is ShowChat) {
+                                return Column(
+                                  children: [
+                                    Text("${state.user.name}"),
+                                    StreamBuilder<DocumentSnapshot>(
+                                      stream: FirebaseFirestore.instance
+                                          .collection('users')
+                                          .doc(state.user.uid)
+                                          .snapshots(),
+                                      builder: (context, snapshot) {
+                                        if (!snapshot.hasData)
+                                          return const SizedBox();
 
-          body: _page[selectedIndex],
+                                        final data =
+                                            snapshot.data!.data()
+                                                as Map<String, dynamic>?;
 
-          bottomNavigationBar: BlocBuilder<SheetCubit, SheetState>(
-            builder: (context, state) {
-              if (state is ShowChat) {
-                return const SizedBox(); // 👈 HIDE NAV BAR
-              }
-              return MediaQuery.removePadding(
-                context: context,
-                removeBottom: true,
-                child: CrystalNavigationBar(
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.15),
-                      blurRadius: 20,
-                      spreadRadius: 1,
-                      offset: const Offset(0, -5), // 👈 shadow goes UP
-                    ),
-                  ],
-                  currentIndex: selectedIndex,
-                  onTap: (index) => HomeNavController.setIndex = index,
-                  height: 70,
-                  backgroundColor: Colors.white.withOpacity(0.9),
-                  unselectedItemColor: Colors.grey,
-                  selectedItemColor: Color.fromARGB(255, 175, 218, 111),
+                                        final isOnline =
+                                            data?['isOnline'] ?? false;
+                                        final lastSeen =
+                                            data?['lastSeen'] as Timestamp?;
 
-                  items: [
-                    CrystalNavigationBarItem(
-                      icon: Icons.chat_bubble,
-                      unselectedIcon: Icons.chat_bubble_outline,
+                                        String statusText;
+
+                                        if (isOnline) {
+                                          statusText = "Online";
+                                        } else if (lastSeen != null) {
+                                          statusText =
+                                              "Last seen ${DateFormat('h:mm a').format(lastSeen.toDate())}";
+                                        } else {
+                                          statusText = "Offline";
+                                        }
+
+                                        return Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            if (isOnline)
+                                              Container(
+                                                width: 8,
+                                                height: 8,
+                                                margin: const EdgeInsets.only(
+                                                  right: 4,
+                                                ),
+                                                decoration: const BoxDecoration(
+                                                  color: Colors.green,
+                                                  shape: BoxShape.circle,
+                                                ),
+                                              ),
+                                            Text(
+                                              statusText,
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                color: isOnline
+                                                    ? Colors.green
+                                                    : Colors.grey,
+                                              ),
+                                            ),
+                                          ],
+                                        );
+                                      },
+                                    ),
+                                  ],
+                                );
+                              }
+                              if (mode == TopMode.search) {
+                                return const Text("Add Users");
+                              }
+
+                              final user = FirebaseAuth.instance.currentUser;
+
+                              if (user == null) {
+                                return const Text("Hi...");
+                              }
+
+                              return FutureBuilder<DocumentSnapshot>(
+                                future: FirebaseFirestore.instance
+                                    .collection('users')
+                                    .doc(user.uid)
+                                    .get(),
+                                builder: (context, snapshot) {
+                                  if (snapshot.connectionState ==
+                                      ConnectionState.waiting) {
+                                    return const Text("Hi...");
+                                  }
+
+                                  if (!snapshot.hasData ||
+                                      !snapshot.data!.exists) {
+                                    return const Text("Hi...");
+                                  }
+
+                                  final data =
+                                      snapshot.data!.data()
+                                          as Map<String, dynamic>?;
+                                  final userName = data?['name'] ?? '';
+
+                                  return Text("Hi, $userName");
+                                },
+                              );
+                            },
+                          );
+                        },
+                      ),
+                      titleSpacing: 0,
                     ),
-                    CrystalNavigationBarItem(
-                      icon: Icons.search_sharp,
-                      unselectedIcon: Icons.search,
+
+              body: _page[selectedIndex],
+
+              bottomNavigationBar: BlocBuilder<SheetCubit, SheetState>(
+                builder: (context, state) {
+                  if (state is ShowChat) {
+                    return const SizedBox(); // 👈 HIDE NAV BAR
+                  }
+                  return MediaQuery.removePadding(
+                    context: context,
+                    removeBottom: true,
+                    child: CrystalNavigationBar(
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.15),
+                          blurRadius: 20,
+                          spreadRadius: 1,
+                          offset: const Offset(0, -5), // 👈 shadow goes UP
+                        ),
+                      ],
+                      currentIndex: selectedIndex,
+                      onTap: (index) => HomeNavController.setIndex = index,
+                      height: 70,
+                      backgroundColor: Colors.white.withOpacity(0.9),
+                      unselectedItemColor: Colors.grey,
+                      selectedItemColor: Color.fromARGB(255, 175, 218, 111),
+
+                      items: [
+                        CrystalNavigationBarItem(
+                          icon: Icons.chat_bubble,
+                          unselectedIcon: Icons.chat_bubble_outline,
+                        ),
+                        CrystalNavigationBarItem(
+                          icon: Icons.search_sharp,
+                          unselectedIcon: Icons.search,
+                        ),
+                        CrystalNavigationBarItem(
+                          icon: Icons.video_call_rounded,
+                          unselectedIcon: Icons.video_call_outlined,
+                        ),
+                        CrystalNavigationBarItem(
+                          icon: Icons.person_rounded,
+                          unselectedIcon: Icons.person_outline,
+                        ),
+                      ],
                     ),
-                    CrystalNavigationBarItem(
-                      icon: Icons.video_call_rounded,
-                      unselectedIcon: Icons.video_call_outlined,
-                    ),
-                    CrystalNavigationBarItem(
-                      icon: Icons.person_rounded,
-                      unselectedIcon: Icons.person_outline,
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
+                  );
+                },
+              ),
+            );
+          },
         );
       },
     );

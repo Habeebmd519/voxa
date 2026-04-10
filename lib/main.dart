@@ -10,6 +10,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:voxa/core/hive/pressentation/models/user_hive_model.dart';
 import 'package:voxa/feature/auth/presentation/blocs/buttonAnm_bloc/button_bloc.dart';
 import 'package:voxa/feature/auth/presentation/blocs/checkBoxBoc/check_bloc.dart';
 import 'package:voxa/core/presence/app_life_cicle_handler.dart';
@@ -27,6 +28,7 @@ import 'package:voxa/feature/task/profile_cubit/profile_cubit.dart';
 
 import 'package:voxa/feature/task/top_toggle_system/cubit/cubit.dart';
 import 'package:voxa/feature/user/bloc/UserCubit.dart';
+import 'package:voxa/feature/user/bloc/current_user_cubit.dart';
 import 'package:voxa/feature/user/service/UserRepository.dart';
 import 'package:voxa/firebase_options.dart';
 
@@ -35,7 +37,11 @@ import 'package:voxa/feature/auth/presentation/screens/screen_login.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // ✅ INIT HIVE
   await Hive.initFlutter();
+
+  // ✅ REGISTER ADAPTER
+  Hive.registerAdapter(UserHiveModelAdapter());
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   // await dotenv.load(fileName: ".env");
@@ -62,14 +68,10 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (_) => PremiumButtonCubit()),
         BlocProvider(create: (_) => TopBarCubit()),
         BlocProvider(create: (_) => EditCubit()),
-        BlocProvider(
-          create: (_) => UserCubit(
-            UserRepository(
-              firestore: FirebaseFirestore.instance,
-              auth: FirebaseAuth.instance,
-            ),
-          )..listenUsers(),
-        ),
+        // BlocProvider(create: (_) => UserCubit()..listenUsers()),
+        // BlocProvider(create: (_) => CurrentUserCubit()),
+        BlocProvider(create: (_) => UserCubit()),
+        BlocProvider(create: (_) => CurrentUserCubit()..loadCurrentUser()),
         BlocProvider(create: (_) => SheetCubit()),
         BlocProvider(create: (_) => ProfileCubit()..loadProfile()),
         BlocProvider(create: (_) => ChatsheetmanageCubit()),

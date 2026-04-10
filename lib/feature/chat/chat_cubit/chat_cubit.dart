@@ -1,7 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:voxa/core/hive/pressentation/models/user_hive_model.dart';
 import 'package:voxa/core/network/notfication_helper/notfication_helper.dart';
+import 'package:voxa/feature/auth/data/model/user_model.dart';
 import 'package:voxa/feature/chat/Repositories/chat_repository/chat_repository.dart';
 import 'chat_state.dart';
 
@@ -77,6 +79,22 @@ class ChatCubitt extends Cubit<ChatState> {
     } catch (e) {
       emit(ChatError(e.toString()));
     }
+  }
+
+  void handleIncomingMessage(Map<String, dynamic> data) async {
+    final senderId = data['senderId'];
+    final text = data['text'] ?? '';
+
+    final doc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(senderId)
+        .get();
+
+    final sender = UserModel.fromMap(doc.data()!);
+
+    final hive = HiveServices();
+    await hive.saveOrUpdateUser(sender, text);
+    await hive.incrementUnread(sender.uid);
   }
 
   Future<void> markChatAsRead({
