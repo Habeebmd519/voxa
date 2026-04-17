@@ -10,6 +10,7 @@ import 'package:voxa/core/hive/pressentation/models/user_hive_model.dart';
 
 import 'package:voxa/core/navigation/home_nav_controller.dart';
 import 'package:voxa/core/widgets/bottom_content.dart';
+import 'package:voxa/feature/Drop/pressantation/bloc/timeLineCubit.dart';
 import 'package:voxa/feature/auth/data/services/auth_service.dart';
 import 'package:voxa/feature/profile/screens/cubit/edit_cubit.dart';
 import 'package:voxa/feature/task/bottomSheet/cubit/sheet_cubit.dart';
@@ -59,6 +60,7 @@ class _MainScreenState extends State<MainScreen> {
 
       if (user == null) return; // 🔥 VERY IMPORTANT
       if (user != null) {
+        context.read<TimelineCubit>().fetchDrops();
         final uid = user.uid;
         final boxName = 'users_$uid';
 
@@ -409,7 +411,7 @@ class _MainScreenState extends State<MainScreen> {
                           unselectedIcon: Icons.search,
                         ),
                         CrystalNavigationBarItem(
-                          icon: Icons.video_call_rounded,
+                          icon: Icons.arrow_drop_up,
                           unselectedIcon: Icons.video_call_outlined,
                         ),
                         CrystalNavigationBarItem(

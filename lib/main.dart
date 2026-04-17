@@ -11,6 +11,9 @@ import 'package:hive_flutter/adapters.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:voxa/core/hive/pressentation/models/user_hive_model.dart';
+import 'package:voxa/feature/Drop/pressantation/bloc/filterCubit.dart';
+import 'package:voxa/feature/Drop/pressantation/bloc/friendCubit/freindCubit.dart';
+import 'package:voxa/feature/Drop/pressantation/bloc/timeLineCubit.dart';
 import 'package:voxa/feature/auth/presentation/blocs/buttonAnm_bloc/button_bloc.dart';
 import 'package:voxa/feature/auth/presentation/blocs/checkBoxBoc/check_bloc.dart';
 import 'package:voxa/core/presence/app_life_cicle_handler.dart';
@@ -21,6 +24,7 @@ import 'package:voxa/feature/chat/Repositories/chat_repository/chat_repository.d
 import 'package:voxa/feature/chat/chat_cubit/chat_cubit.dart';
 import 'package:voxa/feature/profile/screens/cubit/edit_cubit.dart';
 import 'package:voxa/feature/search_from_firebase/bloc/searchCubit.dart';
+import 'package:voxa/feature/splash_screen/presantation/screen/splash_screen.dart';
 
 import 'package:voxa/feature/task/bottomSheet/cubit/sheet_cubit.dart';
 import 'package:voxa/feature/task/chatSheetManagemnt/chatSheetManage.dart';
@@ -88,11 +92,15 @@ class MyApp extends StatelessWidget {
           },
         ),
         BlocProvider(create: (_) => SearchCubit()),
+        BlocProvider(create: (_) => TimelineCubit()),
+        BlocProvider(create: (_) => FilterCubit()),
+        BlocProvider(create: (_) => FriendCubit()),
       ],
       child: MaterialApp(
         theme: ThemeData(textTheme: GoogleFonts.montserratTextTheme()),
         debugShowCheckedModeBanner: false,
-        home: AppLifecycleHandler(child: AnimatedLoginScreen()),
+        home: SynapseSplashScreen(),
+        // home: AppLifecycleHandler(child: AnimatedLoginScreen()),
       ),
     );
   }

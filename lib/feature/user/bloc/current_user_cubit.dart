@@ -21,4 +21,12 @@ class CurrentUserCubit extends Cubit<UserModel?> {
           });
     }
   }
+
+  void emitUpdatedFriends(List<String> updatedFriends) {
+    final current = state;
+
+    if (current == null) return;
+
+    emit(current.copyWith(friendIds: updatedFriends));
+  }
 }

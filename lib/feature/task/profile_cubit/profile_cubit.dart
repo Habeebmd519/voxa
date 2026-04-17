@@ -21,14 +21,26 @@ class ProfileCubit extends Cubit<ProfileState> {
     emit(ProfileLoading());
 
     try {
+      /// 🔥 1. Get user data
       final doc = await FirebaseFirestore.instance
           .collection('users')
-          .doc(user!.uid)
+          .doc(user.uid)
           .get();
 
       final data = doc.data();
 
-      emit(ProfileLoaded(user: UserModel.fromMap(data!)));
+      /// 🔥 2. Get drops count
+      final dropsSnapshot = await FirebaseFirestore.instance
+          .collection('posts')
+          .where('userId', isEqualTo: user.uid)
+          .get();
+
+      final dropsCount = dropsSnapshot.docs.length;
+
+      /// 🔥 3. Emit with BOTH
+      emit(
+        ProfileLoaded(user: UserModel.fromMap(data!), dropsCount: dropsCount),
+      );
     } catch (e) {
       emit(ProfileError(e.toString()));
     }
@@ -44,7 +56,14 @@ class ProfileCubit extends Cubit<ProfileState> {
           .doc(user!.uid)
           .update(updatedUser.toMap());
 
-      emit(ProfileLoaded(user: updatedUser));
+      emit(
+        ProfileLoaded(
+          user: updatedUser,
+          dropsCount: (state is ProfileLoaded)
+              ? (state as ProfileLoaded).dropsCount
+              : 0,
+        ),
+      );
     } catch (e) {
       emit(ProfileError(e.toString()));
     }
@@ -186,7 +205,14 @@ class ProfileCubit extends Cubit<ProfileState> {
           .doc(user!.uid)
           .update(updatedUser.toMap());
 
-      emit(ProfileLoaded(user: updatedUser));
+      emit(
+        ProfileLoaded(
+          user: updatedUser,
+          dropsCount: (state is ProfileLoaded)
+              ? (state as ProfileLoaded).dropsCount
+              : 0,
+        ),
+      );
     } catch (e) {
       emit(ProfileError(e.toString()));
     }

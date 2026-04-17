@@ -1,7 +1,11 @@
+import 'dart:math';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:hive/hive.dart';
+import 'package:intl/number_symbols_data.dart';
 
 import 'package:voxa/core/navigation/home_nav_controller.dart';
 
@@ -9,6 +13,13 @@ import 'package:hugeicons/hugeicons.dart';
 import 'package:voxa/core/network/webRTC/voice_call/voice_call_cubit.dart';
 import 'package:voxa/core/shimmer_loading/shimmer_loading.dart';
 import 'package:voxa/core/widgets/bottom_content.dart';
+import 'package:voxa/feature/Drop/pressantation/bloc/filterCubit.dart';
+import 'package:voxa/feature/Drop/pressantation/bloc/friendCubit/freindCubit.dart';
+import 'package:voxa/feature/Drop/pressantation/bloc/friendCubit/freindState.dart';
+import 'package:voxa/feature/Drop/pressantation/bloc/timeLineCubit.dart';
+import 'package:voxa/feature/Drop/pressantation/bloc/timeLineState.dart';
+import 'package:voxa/feature/Drop/pressantation/modes/dropModel.dart';
+import 'package:voxa/feature/Drop/servises/services.dart';
 import 'package:voxa/feature/auth/data/model/user_model.dart';
 import 'package:voxa/feature/profile/screens/profile_screen.dart';
 import 'package:voxa/feature/search_from_firebase/bloc/searchCubit.dart';
@@ -26,7 +37,7 @@ import 'package:voxa/feature/task/top_toggle_system/enum.dart';
 import 'package:voxa/feature/user/bloc/UserCubit.dart';
 import 'package:voxa/feature/user/bloc/UserState.dart';
 import 'package:voxa/feature/user/bloc/current_user_cubit.dart';
-import 'package:voxa/feature/user/screen/chat_behind_screen.dart';
+
 import 'package:voxa/feature/user/screen/chat_screen.dart';
 import 'package:voxa/feature/user/utils/behind_screen_flow.dart/behind_sccreen_flow.dart';
 import 'package:voxa/feature/user/widget/behind_top_swction.dart';
@@ -60,7 +71,26 @@ class ScreenHome extends StatelessWidget {
                           : index == 1
                           ? _buildSearchSection(context, SheetState2)
                           : index == 2
-                          ? _buildVideoSction()
+                          ? BlocBuilder<TimelineCubit, TimelineState>(
+                              builder: (context, timelineState) {
+                                if (timelineState is TimelineLoading) {
+                                  return const Center(
+                                    child: CircularProgressIndicator(),
+                                  );
+                                }
+
+                                if (timelineState is TimelineLoaded) {
+                                  return _buildTimeLineSection(
+                                    context,
+                                    timelineState.drops,
+                                  );
+                                }
+
+                                return const Center(
+                                  child: Text("Something went wrong"),
+                                );
+                              },
+                            )
                           : index == 3
                           ? _buildProfileSection(ProState, context)
                           : SizedBox(),
@@ -78,103 +108,286 @@ class ScreenHome extends StatelessWidget {
   /////////////////////////////////////////////////////
   ////.    VIDEO SECTION     //////////////////////////
   ////////////////////////////////////////////////////
+  Widget _buildTimeLineSection(BuildContext context, List<DropModel> drops) {
+    final user = FirebaseAuth.instance.currentUser;
+    return BlocBuilder<TimelineCubit, TimelineState>(
+      builder: (context, state) {
+        final cubit = context.watch<TimelineCubit>();
+        // final user = FirebaseAuth.instance.currentUser;
 
-  Widget _buildVideoSction() {
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Row(
-            children: [
-              // Expanded(
-              //   child: ElevatedButton.icon(
-              //     style: ElevatedButton.styleFrom(
-              //       minimumSize: const Size(double.infinity, 100),
-              //       shape: RoundedRectangleBorder(
-              //         borderRadius: BorderRadius.circular(16),
-              //       ),
-              //     ),
-              //     onPressed: () {},
-              //     label: Text("voice call"),
-              //     icon: Icon(Icons.call),
-              //   ),
-              // ),
-              // SizedBox(width: 8),
-              Expanded(
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(16),
-                  onTap: () {
-                    // TODO: walky-talky action
-                  },
-                  child: Container(
-                    width: double.infinity,
-                    height: 180,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: Colors.white.withOpacity(0.35),
-                        width: 1.5,
-                      ),
-                      boxShadow: [
-                        // outer shadow (separation from bg)
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.15),
-                          blurRadius: 12,
-                          offset: const Offset(0, 6),
-                        ),
-                        // inner light effect
-                        BoxShadow(
-                          color: Colors.white.withOpacity(0.25),
-                          blurRadius: 6,
-                          offset: const Offset(0, -3),
-                        ),
-                      ],
-                      color: const Color.fromARGB(255, 175, 218, 111),
-                      image: const DecorationImage(
-                        image: AssetImage("assets/videoMeetBg.png"),
-                        fit: BoxFit.cover,
-                        opacity: 0.25, // important: avoids overpowering text
-                      ),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: const [
-                        HugeIcon(
-                          icon: HugeIcons.strokeRoundedVideo01,
-                          size: 56,
-                          color: Colors.white,
-                        ),
-                        SizedBox(height: 8),
-                        Text(
-                          "Video Meet",
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
+        if (state is! TimelineLoaded) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        return Stack(
+          children: [
+            /// MAIN CONTENT
+            Column(
+              children: [
+                _buildFilterChips(context),
+
+                Expanded(
+                  child: AnimatedBottomContent(
+                    bgColor: Colors.transparent,
+                    contentKey: ValueKey(cubit.currentFilter),
+                    child: ListView.builder(
+                      key: ValueKey(cubit.currentFilter),
+                      padding: const EdgeInsets.only(bottom: 120),
+                      itemCount: state.drops.length,
+                      itemBuilder: (context, index) {
+                        final currentUser = context
+                            .watch<CurrentUserCubit>()
+                            .state;
+
+                        if (currentUser == null) {
+                          return const SizedBox();
+                        }
+                        return _DropCard(
+                          user: currentUser,
+                          drop: state.drops[index],
+                          currentUserId: user?.uid ?? '',
+                        );
+                      },
                     ),
                   ),
                 ),
-              ),
-            ],
-          ),
-        ),
-        Expanded(
-          child: AnimatedBottomContent(
-            contentKey: ValueKey("video_sheet"),
-            child: ListView.builder(
-              itemCount: 10,
-              itemBuilder: (context, i) {
-                return const ListTile(title: Text("History"));
-              },
+              ],
             ),
-          ),
-        ),
-      ],
+
+            /// ✅ SHOW FAB ONLY FOR "MY DROPS"
+            if (cubit.currentFilter == DropFilter.mine)
+              Positioned(
+                bottom:
+                    MediaQuery.of(context).padding.bottom + 10, // 🔥 key fix
+                right: 20,
+                child: _buildModernFAB(context),
+              ),
+          ],
+        );
+      },
     );
   }
+
+  Widget _buildModernFAB(BuildContext context) {
+    void _openCreateDrop(BuildContext context) {
+      final controller = TextEditingController();
+
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) {
+          return Padding(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).viewInsets.bottom,
+            ),
+            child: Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  /// HANDLE
+                  Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+
+                  /// TITLE
+                  const Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      "Create Drop",
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  /// INPUT
+                  TextField(
+                    controller: controller,
+                    maxLines: 4,
+                    decoration: InputDecoration(
+                      hintText: "What's on your mind?",
+                      filled: true,
+                      fillColor: Colors.grey.shade100,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  /// BUTTON
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        final text = controller.text.trim();
+                        if (text.isEmpty) return;
+
+                        final currentUser = context
+                            .read<CurrentUserCubit>()
+                            .state;
+
+                        await FirebaseFirestore.instance
+                            .collection('posts')
+                            .add({
+                              'userId': currentUser!.uid, // ✅ IMPORTANT
+                              'userName': currentUser?.name ?? "User",
+                              'userEmail': currentUser?.email ?? '',
+                              'userAvatar': currentUser?.photoUrl ?? "",
+                              'text': text,
+                              'createdAt': FieldValue.serverTimestamp(),
+                              'likeCount': 0,
+                            });
+
+                        Navigator.pop(context);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      child: const Text("Drop"),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      );
+    }
+
+    return GestureDetector(
+      onTap: () => _openCreateDrop(context),
+      child: Container(
+        height: 60,
+        width: 60,
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Colors.green, Colors.lightGreen],
+          ),
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.green.withOpacity(0.4),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: const Icon(Icons.add, color: Colors.white, size: 28),
+      ),
+    );
+  }
+
+  //// filter chips build
+  Widget _buildFilterChips(BuildContext context) {
+    final filters = DropFilter.values;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: filters.map((filter) {
+            final cubit = context.watch<TimelineCubit>();
+            final isSelected = cubit.currentFilter == filter;
+
+            return Padding(
+              // decoration: BoxDecoration(
+              //   // borderRadius: BorderRadius.circular(30),
+              //   color: Color.fromARGB(255, 110, 160, 80),
+              // ),
+              padding: const EdgeInsets.only(right: 8),
+              child: ChoiceChip(
+                // backgroundColor: Color.fromARGB(255, 110, 160, 80),
+                // selectedColor: Color.fromARGB(255, 79, 127, 47),
+                label: Text(
+                  filter.label,
+                  style: TextStyle(color: Colors.white),
+                ),
+                side: BorderSide.none, // ← Main fix
+                // Optional: Make it look cleaner without border
+                shape: const StadiumBorder(),
+                color: WidgetStateProperty.resolveWith<Color?>((states) {
+                  if (states.contains(WidgetState.hovered)) {
+                    return Color.fromARGB(
+                      255,
+                      110,
+                      160,
+                      80,
+                    ); // removes hover color
+                  }
+                  if (states.contains(WidgetState.selected)) {
+                    return Color.fromARGB(255, 79, 127, 47);
+                  }
+                  return Color.fromARGB(255, 110, 160, 80);
+                }),
+                selected: isSelected,
+                onSelected: (_) {
+                  final myId = FirebaseAuth.instance.currentUser!.uid;
+                  final friendIds =
+                      context.read<CurrentUserCubit>().state?.friendIds ?? [];
+
+                  context.read<TimelineCubit>().applyFilter(
+                    filter,
+                    myId,
+                    friendIds,
+                  );
+                },
+              ),
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+
+  List<DropModel> _filteredDrops(
+    List<DropModel> drops,
+    String selectedFilter,
+    String myId,
+    List<String> friendIds,
+  ) {
+    switch (selectedFilter) {
+      case "Friends Drops":
+        return drops.where((d) => friendIds.contains(d.userId)).toList();
+
+      case "My Drops":
+        return drops.where((d) => d.userId == myId).toList();
+
+      default:
+        return drops;
+    }
+  }
+
+  // "'''
+  //
+  //
+
+  //
+  //
+  //
+  // ''''"
 
   /////////////////////////////////////////////////////
   ////.    ADIO SECTION     //////////////////////////
@@ -226,6 +439,7 @@ class ScreenHome extends StatelessWidget {
         /// 📂 CONTENT
         Expanded(
           child: AnimatedBottomContent(
+            bgColor: Colors.white,
             contentKey: const ValueKey("search_sheet"),
             child: BlocBuilder<SearchCubit, SearchState>(
               builder: (context, state) {
@@ -421,6 +635,7 @@ class ScreenHome extends StatelessWidget {
         ),
         Expanded(
           child: AnimatedBottomContent(
+            bgColor: Colors.white,
             contentKey: ValueKey("user_sheet"),
             child: BlocBuilder<UserCubit, UserState>(
               builder: (context, state) {
@@ -606,9 +821,10 @@ class ScreenHome extends StatelessWidget {
           //   state: state,
           //   SheetState: SheetState,
           // ),
-          buildProfieAvatr(user: state.user),
+          buildProfieAvatr(user: state.user, currentUser: state.user),
           Expanded(
             child: AnimatedBottomContent(
+              bgColor: Colors.white,
               contentKey: const ValueKey("chat_behind_sheet"),
               child: BehindSccreenFlow(
                 user: state.user,
@@ -622,6 +838,7 @@ class ScreenHome extends StatelessWidget {
           ChatHeader(user: state.user),
           Expanded(
             child: AnimatedBottomContent(
+              bgColor: Colors.white,
               contentKey: const ValueKey("chat_sheet"),
               child: ChatScreen(receiverUser: state.user),
             ),
@@ -656,6 +873,7 @@ class ScreenHome extends StatelessWidget {
         const SizedBox(height: 16),
         Expanded(
           child: AnimatedBottomContent(
+            bgColor: Colors.white,
             contentKey: const ValueKey("profile_sheet"),
             child: ProfileScreen(state: state, uid: user.uid),
           ),
@@ -856,11 +1074,16 @@ class _ProfileHeroCard extends StatelessWidget {
           IntrinsicHeight(
             child: Row(
               children: [
-                _StatItem(value: "221", label: "MESSAGES"),
+                _StatItem(
+                  value: "${state.user.friendIds?.length ?? 0}",
+                  label: "FRIENDS",
+                ),
                 _VerticalDivider(),
-                _StatItem(value: "48", label: "CONTACTS"),
+
+                _StatItem(value: "${state.dropsCount ?? 0}", label: "DROPS"),
                 _VerticalDivider(),
-                _StatItem(value: "5", label: "GROUPS"),
+
+                _StatItem(value: "${state.user.rating}", label: "RATE"),
               ],
             ),
           ),
@@ -1163,5 +1386,469 @@ class _VerticalDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(width: 1, color: Colors.white.withOpacity(0.2));
+  }
+}
+
+// """""" drop methods
+
+class _DropCard extends StatefulWidget {
+  final UserModel user;
+  final DropModel drop;
+  final String currentUserId;
+
+  const _DropCard({
+    required this.user,
+    required this.drop,
+    required this.currentUserId,
+  });
+
+  @override
+  State<_DropCard> createState() => _DropCardState();
+}
+
+class _DropCardState extends State<_DropCard> {
+  late DropModel drop;
+
+  @override
+  void initState() {
+    super.initState();
+    drop = widget.drop;
+  }
+
+  bool isFriend() {
+    return widget.user.friendIds?.contains(widget.drop.userId) ?? false;
+  }
+
+  void toggleLikeOptimistic() async {
+    final currentUserId = context.read<CurrentUserCubit>().state!.uid;
+
+    final isLiked = drop.likedBy.contains(currentUserId);
+
+    List<String> updatedLikedBy = List.from(drop.likedBy);
+
+    if (isLiked) {
+      updatedLikedBy.remove(currentUserId);
+    } else {
+      updatedLikedBy.add(currentUserId);
+    }
+
+    /// 🔥 INSTANT UI UPDATE
+    setState(() {
+      drop = drop.copyWith(
+        likedBy: updatedLikedBy,
+        likeCount: updatedLikedBy.length,
+      );
+    });
+
+    try {
+      await FirebaseFirestore.instance.collection('posts').doc(drop.id).update({
+        'likedBy': isLiked
+            ? FieldValue.arrayRemove([currentUserId])
+            : FieldValue.arrayUnion([currentUserId]),
+        'likeCount': updatedLikedBy.length,
+      });
+    } catch (e) {
+      print("ERROR: $e");
+    }
+  }
+
+  DropSarvice dropSarvice = DropSarvice();
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          /// 🔥 USER ROW
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 20,
+                backgroundColor: Colors.grey.shade200,
+                backgroundImage: (widget.drop.userAvatar.isNotEmpty)
+                    ? NetworkImage(widget.drop.userAvatar)
+                    : null,
+                child: widget.drop.userAvatar.isEmpty
+                    ? Text(
+                        widget.drop.userName[0].toUpperCase(),
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      )
+                    : null,
+              ),
+
+              const SizedBox(width: 12),
+
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          widget.drop.userName,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 15,
+                          ),
+                        ),
+                        SizedBox(width: 10),
+                        Text(
+                          "@${widget.drop.userEmail}",
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w200,
+                            fontSize: 10,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Text(
+                      _timeAgo(widget.drop.createdAt),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              /// ➕ ADD FRIEND BUTTON
+              // if (!isAlreadyFriend && drop.userId != currentUserId)
+              if (widget.drop.userId != widget.currentUserId)
+                BlocBuilder<FriendCubit, FriendState>(
+                  builder: (context, state) {
+                    final currentUser = context.watch<CurrentUserCubit>().state;
+
+                    if (currentUser == null) return const SizedBox();
+
+                    final isFriend =
+                        currentUser.friendIds?.contains(widget.drop.userId) ??
+                        false;
+
+                    return GestureDetector(
+                      onTap: () {
+                        print("FRIENDS: ${currentUser.friendIds}");
+                        print("TARGET: ${widget.drop.userId}");
+                        print("CLICKED"); // 👈 add this
+                        context.read<FriendCubit>().toggleFriend(
+                          myId: currentUser.uid,
+                          targetUserId: widget.drop.userId,
+                          context: context,
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isFriend ? Colors.grey.shade300 : Colors.green,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          isFriend ? "Unfriend" : "InFriend",
+                          style: TextStyle(
+                            color: isFriend ? Colors.black : Colors.white,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+            ],
+          ),
+
+          const SizedBox(height: 14),
+
+          /// 📝 TEXT
+          Text(
+            widget.drop.text,
+            style: const TextStyle(fontSize: 15.5, height: 1.4),
+          ),
+
+          const SizedBox(height: 14),
+
+          /// ❤️ ACTION ROW
+          Row(
+            children: [
+              StreamBuilder<DocumentSnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('posts')
+                    .doc(widget.drop.id)
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) {
+                    return const SizedBox();
+                  }
+
+                  final data = snapshot.data!.data() as Map<String, dynamic>;
+                  final List likedBy = data['likedBy'] ?? [];
+                  final int likeCount = data['likeCount'] ?? 0;
+
+                  final isLiked = likedBy.contains(widget.currentUserId);
+
+                  return GestureDetector(
+                    onTap: toggleLikeOptimistic,
+                    child: Row(
+                      children: [
+                        Icon(
+                          isLiked ? Icons.favorite : Icons.favorite_border,
+                          size: 20,
+                          color: isLiked ? Colors.red : Colors.black,
+                        ),
+                        const SizedBox(width: 6),
+                        Text("$likeCount"),
+                      ],
+                    ),
+                  );
+                },
+              ),
+
+              const SizedBox(width: 20),
+
+              /// 💬 COMMENT BUTTON
+              GestureDetector(
+                onTap: () => _openComments(context),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: const [
+                        Icon(Icons.chat_bubble_outline, size: 20),
+                        SizedBox(width: 6),
+                        Text("Comment"),
+                      ],
+                    ),
+
+                    /// 🔥 LAST COMMENT PREVIEW
+                    StreamBuilder<QuerySnapshot>(
+                      stream: FirebaseFirestore.instance
+                          .collection('posts')
+                          .doc(widget.drop.id) // ✅ FIXED
+                          .collection('comments')
+                          .orderBy('createdAt', descending: true)
+                          .limit(1) // ✅ only last comment
+                          .snapshots(),
+                      builder: (context, snapshot) {
+                        if (!snapshot.hasData) {
+                          return const SizedBox(); // cleaner UI
+                        }
+
+                        final docs = snapshot.data!.docs;
+
+                        if (docs.isEmpty) {
+                          return const Text(
+                            "No comments yet",
+                            style: TextStyle(fontSize: 12, color: Colors.grey),
+                          );
+                        }
+
+                        final lastComment = docs.first;
+
+                        return Text(
+                          lastComment['text'],
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 🔥 ADD FRIEND LOGIC
+  void _addFriend(BuildContext context) async {
+    final userRef = FirebaseFirestore.instance
+        .collection('users')
+        .doc(widget.drop.userId);
+
+    await userRef.set({
+      'friendsId': FieldValue.arrayUnion([widget.currentUserId]),
+    }, SetOptions(merge: true)); // ✅ handles null case
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text("Friend added")));
+  }
+
+  /// 💬 OPEN COMMENTS
+  void _openComments(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => CommentSheet(dropId: widget.drop.id),
+    );
+  }
+}
+
+// ''''''
+
+String _timeAgo(DateTime date) {
+  final diff = DateTime.now().difference(date);
+  if (diff.inMinutes == 0) return "Just Now";
+  if (diff.inMinutes < 60) return "${diff.inMinutes}m ago";
+  if (diff.inHours < 24) return "${diff.inHours}h ago";
+  return "${diff.inDays}d ago";
+}
+
+class CommentSheet extends StatelessWidget {
+  final String dropId;
+
+  const CommentSheet({required this.dropId});
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = TextEditingController();
+    final currentUser = context.read<CurrentUserCubit>().state;
+
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.75,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: Column(
+        children: [
+          /// HANDLE
+          Container(
+            margin: const EdgeInsets.symmetric(vertical: 10),
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+
+          const Text(
+            "Comments",
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+
+          const SizedBox(height: 10),
+
+          /// 🔥 COMMENTS LIST
+          Expanded(
+            child: StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('posts')
+                  .doc(dropId)
+                  .collection('comments')
+                  .orderBy('createdAt', descending: true)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                final docs = snapshot.data!.docs;
+
+                if (docs.isEmpty) {
+                  return const Center(child: Text("No comments yet"));
+                }
+
+                return ListView.builder(
+                  itemCount: docs.length,
+                  itemBuilder: (context, i) {
+                    final data = docs[i];
+
+                    return ListTile(
+                      leading: CircleAvatar(
+                        child: Text(data['userName'][0].toUpperCase()),
+                      ),
+                      title: Text(data['userName']),
+                      subtitle: Text(data['text']),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+
+          /// ✍️ INPUT FIELD
+          Padding(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).viewInsets.bottom,
+              left: 12,
+              right: 12,
+              top: 8,
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: controller,
+                    decoration: InputDecoration(
+                      hintText: "Write a comment...",
+                      filled: true,
+                      fillColor: Colors.grey.shade100,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+
+                /// SEND BUTTON
+                GestureDetector(
+                  onTap: () async {
+                    final text = controller.text.trim();
+                    if (text.isEmpty) return;
+
+                    await FirebaseFirestore.instance
+                        .collection('posts')
+                        .doc(dropId)
+                        .collection('comments')
+                        .add({
+                          'userId': currentUser!.uid,
+                          'userName': currentUser.name,
+                          'userEmail': currentUser.email,
+                          'text': text,
+                          'createdAt': FieldValue.serverTimestamp(),
+                        });
+
+                    controller.clear();
+                  },
+                  child: const CircleAvatar(
+                    backgroundColor: Colors.green,
+                    child: Icon(Icons.send, color: Colors.white),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 10),
+        ],
+      ),
+    );
   }
 }

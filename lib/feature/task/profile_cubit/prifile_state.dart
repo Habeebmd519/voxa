@@ -21,8 +21,9 @@ class ProfileLoading extends ProfileState {
 // }
 class ProfileLoaded extends ProfileState {
   final UserModel user;
+  final int dropsCount;
 
-  const ProfileLoaded({required this.user});
+  ProfileLoaded({required this.user, required this.dropsCount});
 }
 
 class ProfileError extends ProfileState {

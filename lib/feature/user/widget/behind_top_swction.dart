@@ -1,9 +1,14 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:voxa/feature/Drop/pressantation/bloc/friendCubit/freindCubit.dart';
 import 'package:voxa/feature/auth/data/model/user_model.dart';
+import 'package:voxa/feature/user/bloc/current_user_cubit.dart';
 
 class buildProfieAvatr extends StatefulWidget {
   UserModel user;
-  buildProfieAvatr({required this.user});
+  UserModel currentUser;
+  buildProfieAvatr({required this.user, required this.currentUser});
 
   @override
   State<buildProfieAvatr> createState() => _buildProfieAvatrState();
@@ -30,6 +35,8 @@ class _buildProfieAvatrState extends State<buildProfieAvatr>
 
   @override
   Widget build(BuildContext context) {
+    print(widget.user.name);
+    final friendCount = (widget.user.friendIds ?? []).length;
     return SafeArea(
       top: true,
       bottom: false,
@@ -134,13 +141,55 @@ class _buildProfieAvatrState extends State<buildProfieAvatr>
 
           /// TAGLINE / DOMAIN
           Text(
-            widget.user.place ?? "Not Available",
+            (widget.user.place ?? '').trim().isNotEmpty
+                ? widget.user.place!
+                : "Not Available",
             style: TextStyle(
               color: Colors.black.withOpacity(0.6),
               fontSize: 13,
             ),
           ),
 
+          const SizedBox(height: 14),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              /// 👥 FRIEND BUTTON
+              _buildFriendButton(context, widget.user.uid, widget.currentUser),
+
+              const SizedBox(width: 12),
+
+              /// 📸 DROPS COUNT
+              FutureBuilder<QuerySnapshot>(
+                future: FirebaseFirestore.instance
+                    .collection('posts')
+                    .where('userId', isEqualTo: widget.user.uid)
+                    .get(),
+                builder: (context, snapshot) {
+                  final count = snapshot.data?.docs.length ?? 0;
+
+                  return _buildStatButton(
+                    label: "Drops",
+                    count: count,
+                    onTap: () {
+                      // navigate to user drops
+                    },
+                  );
+                },
+              ),
+
+              const SizedBox(width: 12),
+
+              /// 👥 FRIEND COUNT
+              _buildStatButton(
+                label: "Friends",
+                count: friendCount,
+                onTap: () {
+                  // open friend list
+                },
+              ),
+            ],
+          ),
           const SizedBox(height: 14),
 
           /// 🔥 SKILL CHIPS
@@ -166,6 +215,62 @@ Widget _chip(String text) {
       borderRadius: BorderRadius.circular(20),
     ),
     child: Text(text, style: const TextStyle(fontSize: 12)),
+  );
+}
+
+Widget _buildFriendButton(
+  BuildContext context,
+  String targetUserId,
+  UserModel currentUser,
+) {
+  if (targetUserId == currentUser.uid) {
+    return const SizedBox();
+  }
+
+  final isFriend = currentUser.friendIds?.contains(targetUserId) ?? false;
+
+  return GestureDetector(
+    onTap: () {
+      context.read<FriendCubit>().toggleFriend(
+        myId: currentUser.uid,
+        targetUserId: targetUserId,
+        context: context,
+      );
+    },
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+      decoration: BoxDecoration(
+        color: isFriend ? Colors.grey.shade300 : Colors.green,
+        borderRadius: BorderRadius.circular(30),
+      ),
+      child: Text(isFriend ? "Unfriend" : "InFriend"),
+    ),
+  );
+}
+
+Widget _buildStatButton({
+  required String label,
+  required int count,
+  required VoidCallback onTap,
+}) {
+  return GestureDetector(
+    onTap: onTap,
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(30),
+      ),
+      child: Column(
+        children: [
+          Text(
+            "$count",
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          ),
+          Text(label, style: const TextStyle(fontSize: 12)),
+        ],
+      ),
+    ),
   );
 }
 

@@ -42,6 +42,8 @@ class UserModel {
 
   // search key words of every users
   final List<String> searchKeywords;
+  //
+  final List<String> friendIds;
 
   UserModel({
     required this.uid,
@@ -78,6 +80,9 @@ class UserModel {
     this.skills = const [],
 
     this.searchKeywords = const [],
+
+    //
+    this.friendIds = const [],
   });
 
   /// FROM FIRESTORE
@@ -109,7 +114,7 @@ class UserModel {
       lastMessage: map['lastMessage'],
       //
       role: map['role'],
-      place: map['place'],
+      place: map['place'] ?? '',
       exp: map['exp'],
       domain: map['domain'],
       projects: List<Map<String, dynamic>>.from(map['projects'] ?? []),
@@ -132,6 +137,8 @@ class UserModel {
       // skill
       skills: List<String>.from(map['skills'] ?? []),
       searchKeywords: List<String>.from(map['searchKeywords'] ?? []),
+      //
+      friendIds: List<String>.from(map['friendIds'] ?? []),
     );
   }
 
@@ -174,6 +181,8 @@ class UserModel {
       // skill
       'skills': skills,
       'searchKeywords': searchKeywords,
+      //
+      'friendIds': friendIds,
     };
   }
 
@@ -211,6 +220,8 @@ class UserModel {
     //skill
     List<String>? skills,
     final List<String>? searchKeywords,
+    //
+    List<String>? friendIds,
   }) {
     return UserModel(
       uid: uid ?? this.uid,
@@ -246,7 +257,9 @@ class UserModel {
       ///
       skills: skills ?? this.skills,
       //
-      searchKeywords: searchKeywords ?? this.searchKeywords,
+      searchKeywords: searchKeywords ?? this.searchKeywords, //
+      friendIds: friendIds ?? this.friendIds,
+      //
     );
   }
 }

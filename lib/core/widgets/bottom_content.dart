@@ -4,11 +4,13 @@ import 'package:flutter/material.dart';
 class AnimatedBottomContent extends StatelessWidget {
   final Widget child;
   final Key contentKey;
+  final Color bgColor;
 
   const AnimatedBottomContent({
     super.key,
     required this.child,
     required this.contentKey,
+    required this.bgColor,
   });
 
   @override
@@ -27,8 +29,8 @@ class AnimatedBottomContent extends StatelessWidget {
       },
       child: Container(
         key: contentKey,
-        decoration: const BoxDecoration(
-          color: Colors.white,
+        decoration: BoxDecoration(
+          color: bgColor,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: child,
