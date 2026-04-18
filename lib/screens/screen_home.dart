@@ -37,9 +37,12 @@ import 'package:voxa/feature/task/top_toggle_system/enum.dart';
 import 'package:voxa/feature/user/bloc/UserCubit.dart';
 import 'package:voxa/feature/user/bloc/UserState.dart';
 import 'package:voxa/feature/user/bloc/current_user_cubit.dart';
+import 'package:voxa/feature/user/screen/chatHeaderFlow.dart';
+import 'package:voxa/feature/user/screen/chat_flow_screen.dart';
 
 import 'package:voxa/feature/user/screen/chat_screen.dart';
 import 'package:voxa/feature/user/utils/behind_screen_flow.dart/behind_sccreen_flow.dart';
+import 'package:voxa/feature/user/widget/behind_top_flow.dart';
 import 'package:voxa/feature/user/widget/behind_top_swction.dart';
 import 'package:voxa/feature/user/widget/chat_hedear.dart';
 
@@ -804,24 +807,27 @@ class ScreenHome extends StatelessWidget {
     ShowChat state,
     ChatsheetmanageState SheetState,
   ) {
-    // double getHeight(BuildContext context, ChatsheetmanageState state) {
-    //   final screenHeight = MediaQuery.of(context).size.height;
-    //   final safeTop = MediaQuery.of(context).padding.top;
-    //   final safeBottom = MediaQuery.of(context).padding.bottom;
-
-    //   final usableHeight = screenHeight - safeTop - safeBottom;
-    //   // final usableHeight = screenHeight;
-    // }
+    // return StreamBuilder<DocumentSnapshot>(
+    //   stream: FirebaseFirestore.instance
+    //       .collection('users')
+    //       .doc(state.user.uid)
+    //       .snapshots(),
+    //   builder: (context, snapshot) {
+    //     UserModel fullUser = state.user;
+    //     if (snapshot.hasData && snapshot.data?.data() != null) {
+    //       try {
+    //         fullUser = UserModel.fromMap(
+    //           snapshot.data!.data() as Map<String, dynamic>,
+    //         );
+    //       } catch (e) {
+    //         debugPrint("Error parsing full user: $e");
+    //       }
+    //     }
 
     return Column(
       children: [
         if (SheetState.selectedSheet == Chatsheetmanage.zero) ...{
-          // BehindSccreenFlow(
-          //   user: state.user,
-          //   state: state,
-          //   SheetState: SheetState,
-          // ),
-          buildProfieAvatr(user: state.user, currentUser: state.user),
+          BehindTopFlow(user: state.user),
           Expanded(
             child: AnimatedBottomContent(
               bgColor: Colors.white,
@@ -829,23 +835,28 @@ class ScreenHome extends StatelessWidget {
               child: BehindSccreenFlow(
                 user: state.user,
                 SheetState: SheetState,
-                state: state,
+                // state: ShowChat(s),
               ),
             ),
           ),
         },
         if (SheetState.selectedSheet == Chatsheetmanage.half) ...{
-          ChatHeader(user: state.user),
+          Chatheaderflow(receiverUser: state.user, sheetState: SheetState),
           Expanded(
             child: AnimatedBottomContent(
               bgColor: Colors.white,
               contentKey: const ValueKey("chat_sheet"),
-              child: ChatScreen(receiverUser: state.user),
+              child: ChatFlowScreen(
+                receiverUser: state.user,
+                sheetState: SheetState,
+              ),
             ),
           ),
         },
       ],
     );
+    // }
+    // )
   }
 
   /////////////////////////////////////////////////////
@@ -1452,6 +1463,21 @@ class _DropCardState extends State<_DropCard> {
     }
   }
 
+  Future<void> _deleteDrop(BuildContext context) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('posts')
+          .doc(widget.drop.id)
+          .delete();
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Drop deleted")));
+    } catch (e) {
+      print("DELETE ERROR: $e");
+    }
+  }
+
   DropSarvice dropSarvice = DropSarvice();
   @override
   Widget build(BuildContext context) {
@@ -1506,25 +1532,38 @@ class _DropCardState extends State<_DropCard> {
                         ),
                         SizedBox(width: 10),
                         Text(
-                          "@${widget.drop.userEmail}",
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w200,
-                            fontSize: 10,
-                            color: Colors.grey,
+                          _timeAgo(widget.drop.createdAt),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade500,
                           ),
                         ),
                       ],
                     ),
                     Text(
-                      _timeAgo(widget.drop.createdAt),
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey.shade500,
+                      widget.drop.userEmail.isNotEmpty
+                          ? "@${widget.drop.userEmail}"
+                          : "",
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w200,
+                        fontSize: 10,
+                        color: Colors.grey,
                       ),
                     ),
                   ],
                 ),
               ),
+              if (widget.drop.userId == widget.currentUserId)
+                PopupMenuButton<String>(
+                  onSelected: (value) {
+                    if (value == 'delete') {
+                      _deleteDrop(context);
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(value: 'delete', child: Text("Delete")),
+                  ],
+                ),
 
               /// ➕ ADD FRIEND BUTTON
               // if (!isAlreadyFriend && drop.userId != currentUserId)
@@ -1721,6 +1760,26 @@ class CommentSheet extends StatelessWidget {
   final String dropId;
 
   const CommentSheet({required this.dropId});
+  Future<void> _deleteComment(
+    BuildContext context,
+    String dropId,
+    String commentId,
+  ) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('posts')
+          .doc(dropId)
+          .collection('comments')
+          .doc(commentId)
+          .delete();
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Comment deleted")));
+    } catch (e) {
+      print("DELETE COMMENT ERROR: $e");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1784,6 +1843,23 @@ class CommentSheet extends StatelessWidget {
                       ),
                       title: Text(data['userName']),
                       subtitle: Text(data['text']),
+
+                      /// ✅ SHOW DELETE ONLY FOR OWNER
+                      trailing: data['userId'] == currentUser?.uid
+                          ? PopupMenuButton<String>(
+                              onSelected: (value) {
+                                if (value == 'delete') {
+                                  _deleteComment(context, dropId, data.id);
+                                }
+                              },
+                              itemBuilder: (context) => [
+                                const PopupMenuItem(
+                                  value: 'delete',
+                                  child: Text("Delete"),
+                                ),
+                              ],
+                            )
+                          : null,
                     );
                   },
                 );

@@ -86,9 +86,8 @@ class UserModel {
   });
 
   /// FROM FIRESTORE
+  ///
   factory UserModel.fromMap(Map<String, dynamic> map) {
-    print("🔥 RAW USER MAP: $map");
-    print("🔥 RATING FIELD: ${map['rating']} (${map['rating']?.runtimeType})");
     return UserModel(
       uid: map['uid'] ?? '',
       email: map['email'] ?? '',
@@ -96,7 +95,6 @@ class UserModel {
       phone: map['phone'] ?? '',
       photoUrl: map['photoUrl'],
 
-      //
       oneSignalId: map['oneSignalId'],
       isOnline: map['isOnline'] ?? false,
       lastSeen: map['lastSeen'] != null
@@ -104,41 +102,48 @@ class UserModel {
           : null,
 
       lastSenderId: map['lastSenderId'],
-
-      ///
-      unreadCount: Map<String, int>.from(
-        (map['unreadCount'] ?? {}).map(
-          (key, value) => MapEntry(key, value as int),
-        ),
-      ),
       lastMessage: map['lastMessage'],
-      //
+
+      unreadCount: (map['unreadCount'] as Map<String, dynamic>? ?? {}).map(
+        (key, value) => MapEntry(key, (value as num).toInt()),
+      ),
+
       role: map['role'],
-      place: map['place'] ?? '',
+      place: map['place'],
       exp: map['exp'],
       domain: map['domain'],
-      projects: List<Map<String, dynamic>>.from(map['projects'] ?? []),
 
-      // ⭐ Credibility
-      rating: (map['rating'] ?? 0.0)
-          .toDouble(), // 1. Handle Null with ?? 2. Force double
+      projects: (map['projects'] as List<dynamic>? ?? [])
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList(),
+
+      rating: (map['rating'] ?? 0).toDouble(),
       reviewCount: (map['reviewCount'] ?? 0).toInt(),
-      completedProjects: map['completedProjects'] is int
-          ? map['completedProjects']
-          : 0,
-      badges: List<String>.from(map['badges'] ?? []),
+      completedProjects: (map['completedProjects'] ?? 0).toInt(),
+
+      badges: (map['badges'] as List<dynamic>? ?? [])
+          .map((e) => e.toString())
+          .toList(),
+
       isEmailVerified: map['isEmailVerified'] ?? false,
       isPhoneVerified: map['isPhoneVerified'] ?? false,
       isPro: map['isPro'] ?? false,
-      // Availbilies
+
       isAvailable: map['isAvailable'] ?? true,
       responseTime: map['responseTime'] ?? "Fast",
       isRemote: map['isRemote'] ?? true,
-      // skill
-      skills: List<String>.from(map['skills'] ?? []),
-      searchKeywords: List<String>.from(map['searchKeywords'] ?? []),
-      //
-      friendIds: List<String>.from(map['friendIds'] ?? []),
+
+      skills: (map['skills'] as List<dynamic>? ?? [])
+          .map((e) => e.toString())
+          .toList(),
+
+      searchKeywords: (map['searchKeywords'] as List<dynamic>? ?? [])
+          .map((e) => e.toString())
+          .toList(),
+
+      friendIds: (map['friendIds'] as List<dynamic>? ?? [])
+          .map((e) => e.toString())
+          .toList(),
     );
   }
 

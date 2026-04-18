@@ -1,9 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:voxa/core/buildFriendButton/friendButton.dart';
 import 'package:voxa/feature/Drop/pressantation/bloc/friendCubit/freindCubit.dart';
 import 'package:voxa/feature/auth/data/model/user_model.dart';
 import 'package:voxa/feature/user/bloc/current_user_cubit.dart';
+// import 'package:voxa/testing/followButtin.dart';
 
 class buildProfieAvatr extends StatefulWidget {
   UserModel user;
@@ -155,8 +157,12 @@ class _buildProfieAvatrState extends State<buildProfieAvatr>
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               /// 👥 FRIEND BUTTON
-              _buildFriendButton(context, widget.user.uid, widget.currentUser),
 
+              // _buildFriendButton(context, widget.user.uid, widget.currentUser),
+              FollowButton(
+                targetUserId: widget.user.uid,
+                currentUser: widget.currentUser,
+              ),
               const SizedBox(width: 12),
 
               /// 📸 DROPS COUNT

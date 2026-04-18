@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:voxa/core/hive/pressentation/models/user_hive_model.dart';
 
@@ -85,6 +86,58 @@ class _MainScreenState extends State<MainScreen> {
         });
       }
     });
+    checkForUpdate(context);
+  }
+
+  void _showUpdateDialog(BuildContext context, bool force, String message) {
+    if (!force) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          action: SnackBarAction(
+            label: "Update",
+            onPressed: () {
+              // TODO: open Play Store
+            },
+          ),
+        ),
+      );
+    } else {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => AlertDialog(
+          title: const Text("Update Required"),
+          content: Text(message),
+          actions: [
+            ElevatedButton(
+              onPressed: () {
+                // TODO: open Play Store
+              },
+              child: const Text("Update"),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  Future<void> checkForUpdate(BuildContext context) async {
+    final packageInfo = await PackageInfo.fromPlatform();
+    final currentVersion = packageInfo.version;
+
+    final doc = await FirebaseFirestore.instance
+        .collection('app_config')
+        .doc('version')
+        .get();
+
+    final latestVersion = doc['latestVersion'];
+    final forceUpdate = doc['forceUpdate'];
+    final message = doc['message'];
+
+    if (currentVersion != latestVersion) {
+      _showUpdateDialog(context, forceUpdate, message);
+    }
   }
 
   void _showMenu(BuildContext context) async {
@@ -129,6 +182,7 @@ class _MainScreenState extends State<MainScreen> {
         ),
       ],
     );
+
     Future<void> _logout(BuildContext context) async {
       final uid = FirebaseAuth.instance.currentUser?.uid;
 
@@ -469,8 +523,9 @@ class _MainScreenState extends State<MainScreen> {
                           unselectedIcon: Icons.search,
                         ),
                         CrystalNavigationBarItem(
-                          icon: Icons.arrow_drop_up,
-                          unselectedIcon: Icons.video_call_outlined,
+                          icon: Icons.water_drop_outlined, // branding,,
+                          unselectedIcon:
+                              Icons.water_drop_outlined, // branding,
                         ),
                         CrystalNavigationBarItem(
                           icon: Icons.person_rounded,

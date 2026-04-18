@@ -245,7 +245,7 @@ class PremiumAnimatedButton extends StatelessWidget {
                     renderBox?.localToGlobal(Offset.zero) ?? Offset.zero;
                 final buttonSize = renderBox?.size ?? Size.zero;
                 FocusManager.instance.primaryFocus?.unfocus();
-                Navigator.of(context).push(
+                Navigator.of(context).pushAndRemoveUntil(
                   PageRouteBuilder(
                     pageBuilder: (_, __, ___) => ExpandingScreenFromButton(
                       email: emailController.text.trim(),
@@ -254,6 +254,7 @@ class PremiumAnimatedButton extends StatelessWidget {
                     ),
                     transitionDuration: const Duration(milliseconds: 700),
                   ),
+                  (route) => false, // 🔥 THIS IS REQUIRED
                 );
               }
 

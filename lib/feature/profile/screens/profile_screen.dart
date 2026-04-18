@@ -3,8 +3,13 @@ import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:hive_flutter/adapters.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:voxa/core/hive/pressentation/models/user_hive_model.dart';
 import 'package:voxa/core/shimmer_loading/shimmer_loading.dart';
 import 'package:voxa/feature/auth/data/model/user_model.dart';
+import 'package:voxa/feature/auth/data/services/auth_service.dart';
+import 'package:voxa/feature/auth/presentation/screens/screen_login.dart';
 import 'package:voxa/feature/profile/screens/cubit/edit_cubit.dart';
 import 'package:voxa/feature/task/profile_cubit/prifile_state.dart';
 import 'package:voxa/feature/task/profile_cubit/profile_cubit.dart';
@@ -285,6 +290,45 @@ class _ProfileSheetContent extends StatelessWidget {
     required this.emailCtrl,
   });
 
+  Future<void> _logout(BuildContext context) async {
+    AuthService authService = AuthService();
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+
+    // 🔥 1. Close Hive first
+    if (uid != null) {
+      final boxName = 'users_$uid';
+      if (Hive.isBoxOpen(boxName)) {
+        await Hive.box<UserHiveModel>(boxName).close();
+      }
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('uid');
+
+    // 🔥 2. LOGOUT FIRST
+    await authService.logout();
+
+    if (!context.mounted) return;
+
+    // 🔥 3. Navigate FIRST (no SnackBar before this)
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => AnimatedLoginScreen()),
+      (route) => false,
+    );
+
+    // 🔥 4. Show snackbar AFTER navigation (safe context)
+    Future.microtask(() {
+      final messenger = ScaffoldMessenger.of(context);
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Logged out successfully'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     Widget _divider() => Container(height: 1, color: const Color(0xFFEEEEEE));
@@ -506,6 +550,7 @@ class _ProfileSheetContent extends StatelessWidget {
           child: OutlinedButton(
             onPressed: () {
               // logout logic
+              _logout(context);
             },
             style: OutlinedButton.styleFrom(
               foregroundColor: const Color(0xFF7B2FBE),

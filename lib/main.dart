@@ -22,6 +22,7 @@ import 'package:voxa/core/presence/online_status_cubit.dart';
 import 'package:voxa/feature/auth/presentation/cubits/premuim_button_cubit/premium_button_cubit.dart';
 import 'package:voxa/feature/chat/Repositories/chat_repository/chat_repository.dart';
 import 'package:voxa/feature/chat/chat_cubit/chat_cubit.dart';
+
 import 'package:voxa/feature/profile/screens/cubit/edit_cubit.dart';
 import 'package:voxa/feature/search_from_firebase/bloc/searchCubit.dart';
 import 'package:voxa/feature/splash_screen/presantation/screen/splash_screen.dart';
@@ -37,6 +38,7 @@ import 'package:voxa/feature/user/service/UserRepository.dart';
 import 'package:voxa/firebase_options.dart';
 
 import 'package:voxa/feature/auth/presentation/screens/screen_login.dart';
+import 'package:voxa/testing/followButtin.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -100,7 +102,8 @@ class MyApp extends StatelessWidget {
         theme: ThemeData(textTheme: GoogleFonts.montserratTextTheme()),
         debugShowCheckedModeBanner: false,
         home: SynapseSplashScreen(),
-        // home: AppLifecycleHandler(child: AnimatedLoginScreen()),
+        // home: DemoPage(),
+        home: AppLifecycleHandler(child: AnimatedLoginScreen()),
       ),
     );
   }

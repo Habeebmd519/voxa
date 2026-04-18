@@ -60,6 +60,7 @@ dependencies:
   hive_generator: ^2.0.1
   build_runner: ^2.4.13
   firebase_database: ^12.3.0
+  package_info_plus: ^9.0.1
 
 dev_dependencies:
   flutter_test:

@@ -1,7 +1,9 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:voxa/core/maintaince/maintaince.dart';
 import 'package:voxa/screens/main_screen.dart';
 import 'package:voxa/feature/auth/presentation/screens/screen_login.dart';
 
@@ -30,23 +32,23 @@ class AppColors {
   static const dotInactive = Color(0xFF2D5010);
 }
 
-Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
-  runApp(const SynapseApp());
-}
+// Future<void> main() async {
+//   WidgetsFlutterBinding.ensureInitialized();
+//   await Firebase.initializeApp();
+//   runApp(const SynapseApp());
+// }
 
-class SynapseApp extends StatelessWidget {
-  const SynapseApp({super.key});
+// class SynapseApp extends StatelessWidget {
+//   const SynapseApp({super.key});
 
-  @override
-  Widget build(BuildContext context) {
-    return const MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: SynapseSplashScreen(),
-    );
-  }
-}
+//   @override
+//   Widget build(BuildContext context) {
+//     return const MaterialApp(
+//       debugShowCheckedModeBanner: false,
+//       home: SynapseSplashScreen(),
+//     );
+//   }
+// }
 
 // ─── Online Presence Service ──────────────────────────────────────────────────
 
@@ -115,7 +117,7 @@ class _SynapseSplashScreenState extends State<SynapseSplashScreen>
   // Glow pulse
   late AnimationController _glowController;
   late Animation<double> _glowAnim;
-
+  late bool isReady;
   @override
   void initState() {
     super.initState();
@@ -192,6 +194,17 @@ class _SynapseSplashScreenState extends State<SynapseSplashScreen>
 
     // Check login state and handle Firebase presence
     _checkAuthAndNavigate();
+    checkisReady();
+  }
+
+  Future<void> checkisReady() async {
+    final doc = await FirebaseFirestore.instance
+        .collection('app_config')
+        .doc('isReady')
+        .get();
+
+    bool isReadydoc = doc["isReady"];
+    isReady = isReadydoc;
   }
 
   // ── Auth + presence logic ───────────────────────────────────────────────────
@@ -217,13 +230,20 @@ class _SynapseSplashScreenState extends State<SynapseSplashScreen>
     print("➡️ Navigating...");
 
     if (!mounted) return;
-
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (_) => isLoggedIn ? const MainScreen() : AnimatedLoginScreen(),
-      ),
-    );
+    if (isReady) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) =>
+              isLoggedIn ? const MainScreen() : AnimatedLoginScreen(),
+        ),
+      );
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => MaintenanceScreen()),
+      );
+    }
   }
   // ── App lifecycle: set offline when app is backgrounded/closed ──────────────
 
