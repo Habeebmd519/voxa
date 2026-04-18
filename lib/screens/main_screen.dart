@@ -13,6 +13,7 @@ import 'package:voxa/core/hive/pressentation/models/user_hive_model.dart';
 import 'package:voxa/core/navigation/home_nav_controller.dart';
 import 'package:voxa/core/widgets/bottom_content.dart';
 import 'package:voxa/feature/Drop/pressantation/bloc/timeLineCubit.dart';
+import 'package:voxa/feature/auth/data/model/user_model.dart';
 import 'package:voxa/feature/auth/data/services/auth_service.dart';
 import 'package:voxa/feature/profile/screens/cubit/edit_cubit.dart';
 import 'package:voxa/feature/task/bottomSheet/cubit/sheet_cubit.dart';
@@ -77,7 +78,7 @@ class _MainScreenState extends State<MainScreen> {
         setState(() {
           isHiveReady = true;
         });
-
+        listenIncomingMessages(); // 🔥🔥🔥 IMPORTANT
         // ✅ ✅ ✅ ADD IT RIGHT HERE
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
@@ -87,6 +88,77 @@ class _MainScreenState extends State<MainScreen> {
       }
     });
     checkForUpdate(context);
+  }
+
+  StreamSubscription? _messageSub;
+  void listenIncomingMessages() {
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    if (currentUserId == null) return;
+
+    _messageSub?.cancel();
+
+    _messageSub = FirebaseFirestore.instance
+        .collection('chats')
+        .where('participants', arrayContains: currentUserId)
+        .snapshots()
+        .listen((chatSnapshot) async {
+          final uid = currentUserId;
+          final boxName = 'users_$uid';
+
+          if (!Hive.isBoxOpen(boxName)) return;
+
+          final box = Hive.box<UserHiveModel>(boxName);
+
+          for (var chatDoc in chatSnapshot.docs) {
+            final chatId = chatDoc.id;
+
+            /// 🔥 LISTEN EACH CHAT MESSAGES
+            FirebaseFirestore.instance
+                .collection('chats')
+                .doc(chatId)
+                .collection('messages')
+                .orderBy('timestamp', descending: true)
+                .limit(1) // only latest
+                .snapshots()
+                .listen((msgSnapshot) async {
+                  if (msgSnapshot.docs.isEmpty) return;
+
+                  final data = msgSnapshot.docs.first.data();
+
+                  final senderId = data['senderId'];
+                  final text = data['text'] ?? '';
+                  final timestamp = data['timestamp'] as Timestamp?;
+
+                  /// ❗ Skip own messages
+                  if (senderId == currentUserId) return;
+
+                  /// 🔥 GET USER DATA
+                  final userDoc = await FirebaseFirestore.instance
+                      .collection('users')
+                      .doc(senderId)
+                      .get();
+
+                  final sender = UserModel.fromMap(userDoc.data()!);
+
+                  final existing = box.get(senderId);
+
+                  box.put(
+                    senderId,
+                    (existing ??
+                            UserHiveModel(uid: sender.uid, name: sender.name))
+                        .copyWith(
+                          lastMessage: text,
+                          lastMessageTime: timestamp?.toDate(),
+                          unreadCount: (existing?.unreadCount ?? 0) + 1,
+                          email: sender.email,
+                          photoUrl: sender.photoUrl,
+                        ),
+                  );
+
+                  print("🔥 REALTIME FIXED: ${sender.uid}");
+                });
+          }
+        });
   }
 
   void _showUpdateDialog(BuildContext context, bool force, String message) {

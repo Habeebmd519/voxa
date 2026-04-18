@@ -61,7 +61,12 @@ dependencies:
   build_runner: ^2.4.13
   firebase_database: ^12.3.0
   package_info_plus: ^9.0.1
+  flutter_launcher_icons: ^0.14.4
 
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/appIcon.png"
 dev_dependencies:
   flutter_test:
     sdk: flutter

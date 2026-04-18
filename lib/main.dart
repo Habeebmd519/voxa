@@ -103,7 +103,7 @@ class MyApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         home: SynapseSplashScreen(),
         // home: DemoPage(),
-        home: AppLifecycleHandler(child: AnimatedLoginScreen()),
+        // home: AppLifecycleHandler(child: AnimatedLoginScreen()),
       ),
     );
   }

@@ -267,7 +267,7 @@ class _ChatScreenState extends State<ChatScreen> {
     );
     HiveServices hiveServices = HiveServices();
     await hiveServices.saveOrUpdateUser(widget.receiverUser, text);
-    await hiveServices.saveOrUpdateUser(widget.receiverUser, text);
+    // await hiveServices.saveOrUpdateUser(widget.receiverUser, text);
 
     print("✅ SAVED: ${widget.receiverUser.uid}");
     print("📦 BOX DATA: ${Hive.box<UserHiveModel>('users').values.toList()}");

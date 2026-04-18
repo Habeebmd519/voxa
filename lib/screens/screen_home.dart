@@ -1094,7 +1094,10 @@ class _ProfileHeroCard extends StatelessWidget {
                 _StatItem(value: "${state.dropsCount ?? 0}", label: "DROPS"),
                 _VerticalDivider(),
 
-                _StatItem(value: "${state.user.rating}", label: "RATE"),
+                _StatItem(
+                  value: "${state.user.rating.toStringAsFixed(1)}",
+                  label: "RATE",
+                ),
               ],
             ),
           ),
