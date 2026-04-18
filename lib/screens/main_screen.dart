@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:voxa/core/hive/pressentation/models/user_hive_model.dart';
 
 import 'package:voxa/core/navigation/home_nav_controller.dart';
@@ -86,14 +87,48 @@ class _MainScreenState extends State<MainScreen> {
     });
   }
 
-  @override
-  void dispose() {
-    _authSub?.cancel(); // 🔥 THIS FIXES EVERYTHING
-    super.dispose();
-  }
+  void _showMenu(BuildContext context) async {
+    final RenderBox button = context.findRenderObject() as RenderBox;
+    final RenderBox overlay =
+        Overlay.of(context).context.findRenderObject() as RenderBox;
 
-  @override
-  Widget build(BuildContext context) {
+    final position = RelativeRect.fromRect(
+      Rect.fromPoints(
+        button.localToGlobal(Offset.zero, ancestor: overlay),
+        button.localToGlobal(
+          button.size.bottomRight(Offset.zero),
+          ancestor: overlay,
+        ),
+      ),
+      Offset.zero & overlay.size,
+    );
+
+    final selected = await showMenu<String>(
+      context: context,
+      position: position,
+      items: [
+        const PopupMenuItem(
+          value: 'profile',
+          child: Row(
+            children: [
+              Icon(Icons.person),
+              SizedBox(width: 10),
+              Text("Profile"),
+            ],
+          ),
+        ),
+        const PopupMenuItem(
+          value: 'logout',
+          child: Row(
+            children: [
+              Icon(Icons.logout, color: Colors.red),
+              SizedBox(width: 10),
+              Text("Logout"),
+            ],
+          ),
+        ),
+      ],
+    );
     Future<void> _logout(BuildContext context) async {
       final uid = FirebaseAuth.instance.currentUser?.uid;
 
@@ -104,6 +139,9 @@ class _MainScreenState extends State<MainScreen> {
           await Hive.box<UserHiveModel>(boxName).close();
         }
       }
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('uid');
 
       // 🔥 2. LOGOUT FIRST
       await authService.logout();
@@ -128,6 +166,22 @@ class _MainScreenState extends State<MainScreen> {
         );
       });
     }
+
+    if (selected == 'logout') {
+      _logout(context);
+    } else if (selected == 'profile') {
+      // navigate to profile
+    }
+  }
+
+  @override
+  void dispose() {
+    _authSub?.cancel(); // 🔥 THIS FIXES EVERYTHING
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     // final currentUser = FirebaseAuth.instance.currentUser;
     // final uid = currentUser?.uid;
 
@@ -249,7 +303,11 @@ class _MainScreenState extends State<MainScreen> {
                                       return;
                                     }
                                     if (mode == TopMode.normal) {
-                                      _logout(context);
+                                      _showMenu(
+                                        context,
+                                      ); // ✅ popup instead of direct logout
+
+                                      return;
                                     }
                                     if (mode == TopMode.search) {
                                       context.read<TopBarCubit>().reset();

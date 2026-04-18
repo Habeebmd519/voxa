@@ -1,6 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
+// import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/widgets.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
 
@@ -103,17 +103,17 @@ class AuthService {
     }
   }
 
-  Future<void> saveFcmToken() async {
-    String? token = await FirebaseMessaging.instance.getToken();
+  // Future<void> saveFcmToken() async {
+  //   String? token = await FirebaseMessaging.instance.getToken();
 
-    final user = FirebaseAuth.instance.currentUser;
+  //   final user = FirebaseAuth.instance.currentUser;
 
-    if (user != null && token != null) {
-      await FirebaseFirestore.instance.collection("users").doc(user.uid).update(
-        {"fcmToken": token},
-      );
-    }
-  }
+  //   if (user != null && token != null) {
+  //     await FirebaseFirestore.instance.collection("users").doc(user.uid).update(
+  //       {"fcmToken": token},
+  //     );
+  //   }
+  // }
 
   /// GET CURRENT USER
   User? get currentUser => _auth.currentUser;

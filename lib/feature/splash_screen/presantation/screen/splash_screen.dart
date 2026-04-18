@@ -1,5 +1,76 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_database/firebase_database.dart';
+import 'package:voxa/screens/main_screen.dart';
+import 'package:voxa/feature/auth/presentation/screens/screen_login.dart';
+
+// ─── App Color Palette (Green Theme) ─────────────────────────────────────────
+class AppColors {
+  static const background = Color(0xFF1A2E0F); // deep forest bg
+  static const backgroundCard = Color(0xFF1F3A10); // loader track
+  static const coreGradStart = Color(0xFF3A7D14); // dark green
+  static const coreGradMid = Color(0xFF5CB82A); // primary green
+  static const coreGradEnd = Color(0xFF7ED84A); // bright green
+  static const orb1 = Color(0xFF7ED84A);
+  static const orb2 = Color(0xFFA8E87A);
+  static const orb3 = Color(0xFF5CB82A);
+  static const orb4 = Color(0xFFC8F080);
+  static const ring1 = Color(0xFF5A9E28); // ring border
+  static const ring2 = Color(0xFF3D7A18);
+  static const glowCenter = Color(0xFF4A7C22);
+  static const nameStart = Color(0xFFA8E87A);
+  static const nameEnd = Color(0xFFD4F5A0);
+  static const divider = Color(0xFF5CB82A);
+  static const tagline = Color(0xFF5A8A3A);
+  static const loadText = Color(0xFF3D5C28);
+  static const star = Color(0xFFA8D57A);
+  static const leaf = Color(0xFF5CB82A);
+  static const dotActive = Color(0xFF5CB82A);
+  static const dotInactive = Color(0xFF2D5010);
+}
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
+  runApp(const SynapseApp());
+}
+
+class SynapseApp extends StatelessWidget {
+  const SynapseApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: SynapseSplashScreen(),
+    );
+  }
+}
+
+// ─── Online Presence Service ──────────────────────────────────────────────────
+
+/// Manages the user's isOnline flag in Firebase Realtime Database.
+/// Path: users/{uid}/isOnline
+/// Also uses .onDisconnect() so Firebase sets isOnline=false automatically
+/// when the client loses connection (app killed, network lost, etc.).
+class OnlinePresenceService {
+  static final FirebaseDatabase _db = FirebaseDatabase.instance;
+
+  /// Call on login / app open: sets isOnline=true + registers onDisconnect hook.
+  static Future<void> goOnline(String uid) async {
+    final ref = _db.ref('users/$uid');
+    // onDisconnect fires server-side even if the app is force-killed
+    await ref.child('isOnline').onDisconnect().set(false);
+    await ref.update({'isOnline': true, 'lastSeen': ServerValue.timestamp});
+  }
+
+  /// Call explicitly when the user logs out or the app is gracefully closed.
+  static Future<void> goOffline(String uid) async {
+    final ref = _db.ref('users/$uid');
+    await ref.update({'isOnline': false, 'lastSeen': ServerValue.timestamp});
+  }
+}
 
 // ─── Splash Screen ────────────────────────────────────────────────────────────
 
@@ -11,7 +82,9 @@ class SynapseSplashScreen extends StatefulWidget {
 }
 
 class _SynapseSplashScreenState extends State<SynapseSplashScreen>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, WidgetsBindingObserver {
+  // ── Auth state ──────────────────────────────────────────────────────────────
+  String? _loggedInUid; // non-null means user is logged in
   // Float animation for logo
   late AnimationController _floatController;
   late Animation<double> _floatAnim;
@@ -113,10 +186,72 @@ class _SynapseSplashScreenState extends State<SynapseSplashScreen>
     _glowAnim = Tween<double>(begin: 0.5, end: 1.0).animate(
       CurvedAnimation(parent: _glowController, curve: Curves.easeInOut),
     );
+
+    // Register lifecycle observer so we can react to app pause/resume
+    WidgetsBinding.instance.addObserver(this);
+
+    // Check login state and handle Firebase presence
+    _checkAuthAndNavigate();
+  }
+
+  // ── Auth + presence logic ───────────────────────────────────────────────────
+  Future<void> _checkAuthAndNavigate() async {
+    print("🚀 Splash started");
+
+    final prefs = await SharedPreferences.getInstance();
+    final uid = prefs.getString('uid');
+
+    print("👤 UID: $uid");
+
+    final isLoggedIn = uid != null && uid.isNotEmpty;
+
+    if (isLoggedIn) {
+      _loggedInUid = uid;
+
+      // 🔥 DON'T await
+      OnlinePresenceService.goOnline(uid);
+    }
+
+    await Future.delayed(const Duration(seconds: 2));
+
+    print("➡️ Navigating...");
+
+    if (!mounted) return;
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => isLoggedIn ? const MainScreen() : AnimatedLoginScreen(),
+      ),
+    );
+  }
+  // ── App lifecycle: set offline when app is backgrounded/closed ──────────────
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (_loggedInUid == null) return;
+
+    switch (state) {
+      case AppLifecycleState.paused:
+      case AppLifecycleState.detached:
+      case AppLifecycleState.hidden:
+        // App going to background or being killed — mark offline
+        OnlinePresenceService.goOffline(_loggedInUid!);
+        break;
+      case AppLifecycleState.resumed:
+        // App came back to foreground — mark online again
+        OnlinePresenceService.goOnline(_loggedInUid!);
+        break;
+      case AppLifecycleState.inactive:
+        // Transitional state (e.g. phone call overlay) — no action needed
+        break;
+    }
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _floatController.dispose();
     _ring1Controller.dispose();
     _ring2Controller.dispose();
@@ -134,11 +269,14 @@ class _SynapseSplashScreenState extends State<SynapseSplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF070D1F),
+      backgroundColor: AppColors.background,
       body: Stack(
         children: [
           // Background glow blobs
           _BackgroundGlows(glowAnim: _glowAnim),
+
+          // Decorative leaves
+          const _LeafDecorations(),
 
           // Stars
           const _Stars(),
@@ -174,9 +312,9 @@ class _SynapseSplashScreenState extends State<SynapseSplashScreen>
                     ShaderMask(
                       shaderCallback: (bounds) => const LinearGradient(
                         colors: [
-                          Color(0xFFC4B5FD),
-                          Color(0xFFFFFFFF),
-                          Color(0xFF93C5FD),
+                          AppColors.nameStart,
+                          Colors.white,
+                          AppColors.nameEnd,
                         ],
                       ).createShader(bounds),
                       child: const Text(
@@ -194,13 +332,13 @@ class _SynapseSplashScreenState extends State<SynapseSplashScreen>
 
                     // Divider
                     Container(
-                      width: 48,
+                      width: 52,
                       height: 2,
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
                           colors: [
                             Colors.transparent,
-                            Color(0xFF7C3AED),
+                            AppColors.divider,
                             Colors.transparent,
                           ],
                         ),
@@ -216,9 +354,9 @@ class _SynapseSplashScreenState extends State<SynapseSplashScreen>
                       child: const Text(
                         'CONNECT · CHAT · CLOSE',
                         style: TextStyle(
-                          fontSize: 12,
-                          letterSpacing: 3,
-                          color: Color(0xFF6B7DB3),
+                          fontSize: 11,
+                          letterSpacing: 3.5,
+                          color: AppColors.tagline,
                           fontWeight: FontWeight.w400,
                         ),
                       ),
@@ -234,11 +372,16 @@ class _SynapseSplashScreenState extends State<SynapseSplashScreen>
                     const Text(
                       'Loading your drops…',
                       style: TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFF3D507A),
+                        fontSize: 11,
+                        color: AppColors.loadText,
                         letterSpacing: 0.5,
                       ),
                     ),
+
+                    const SizedBox(height: 8),
+
+                    // Pulsing dots
+                    _PulsingDots(),
                   ],
                 ),
               ),
@@ -263,28 +406,28 @@ class _BackgroundGlows extends StatelessWidget {
       builder: (_, __) => Stack(
         children: [
           Positioned(
-            top: -60,
-            left: -60,
+            top: -80,
+            left: -80,
             child: _GlowBlob(
-              size: 300,
-              color: const Color(0xFF3B0FA8).withOpacity(0.25 * glowAnim.value),
+              size: 320,
+              color: AppColors.glowCenter.withOpacity(0.18 * glowAnim.value),
             ),
           ),
           Positioned(
-            bottom: -40,
-            right: -40,
+            bottom: -60,
+            right: -60,
             child: _GlowBlob(
-              size: 260,
-              color: const Color(0xFF0F3A88).withOpacity(0.25 * glowAnim.value),
+              size: 280,
+              color: const Color(0xFF2D5A10).withOpacity(0.18 * glowAnim.value),
             ),
           ),
           Positioned.fill(
             child: Center(
               child: _GlowBlob(
-                size: 200,
+                size: 220,
                 color: const Color(
-                  0xFF2A0A60,
-                ).withOpacity(0.18 * glowAnim.value),
+                  0xFF6ABF28,
+                ).withOpacity(0.12 * glowAnim.value),
               ),
             ),
           ),
@@ -399,7 +542,7 @@ class _PulsingDotState extends State<_PulsingDot>
         width: widget.size,
         height: widget.size,
         decoration: const BoxDecoration(
-          color: Colors.white,
+          color: AppColors.star,
           shape: BoxShape.circle,
         ),
       ),
@@ -438,12 +581,12 @@ class _LogoWidget extends StatelessWidget {
           RotationTransition(
             turns: ring1,
             child: Container(
-              width: 120,
-              height: 120,
+              width: 128,
+              height: 128,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: const Color(0xFF7C3AED).withOpacity(0.35),
+                  color: AppColors.ring1.withOpacity(0.35),
                   width: 1.5,
                 ),
               ),
@@ -454,13 +597,13 @@ class _LogoWidget extends StatelessWidget {
           RotationTransition(
             turns: Tween<double>(begin: 1, end: 0).animate(ring2),
             child: Container(
-              width: 100,
-              height: 100,
+              width: 106,
+              height: 106,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: const Color(0xFF2563EB).withOpacity(0.28),
-                  width: 1.5,
+                  color: AppColors.ring2.withOpacity(0.28),
+                  width: 1,
                 ),
               ),
             ),
@@ -468,28 +611,28 @@ class _LogoWidget extends StatelessWidget {
 
           // Core icon
           Container(
-            width: 72,
-            height: 72,
+            width: 76,
+            height: 76,
             decoration: BoxDecoration(
               gradient: const LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  Color(0xFF4F46E5),
-                  Color(0xFF7C3AED),
-                  Color(0xFFA855F7),
+                  AppColors.coreGradStart,
+                  AppColors.coreGradMid,
+                  AppColors.coreGradEnd,
                 ],
               ),
-              borderRadius: BorderRadius.circular(22),
+              borderRadius: BorderRadius.circular(24),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF7C3AED).withOpacity(0.4),
-                  blurRadius: 32,
+                  color: AppColors.coreGradMid.withOpacity(0.4),
+                  blurRadius: 36,
                   spreadRadius: 0,
                 ),
                 BoxShadow(
-                  color: const Color(0xFF4F46E5).withOpacity(0.15),
-                  blurRadius: 64,
+                  color: AppColors.coreGradStart.withOpacity(0.15),
+                  blurRadius: 70,
                   spreadRadius: 0,
                 ),
               ],
@@ -498,7 +641,7 @@ class _LogoWidget extends StatelessWidget {
               child: Text(
                 'S',
                 style: TextStyle(
-                  fontSize: 38,
+                  fontSize: 40,
                   fontWeight: FontWeight.w700,
                   color: Colors.white,
                   height: 1,
@@ -510,27 +653,27 @@ class _LogoWidget extends StatelessWidget {
           // Orbs around the rings
           _OrbWidget(
             controller: orb1,
-            color: const Color(0xFF06B6D4),
+            color: AppColors.orb1,
             size: 14,
             baseOffset: const Offset(0, -60),
           ),
           _OrbWidget(
             controller: orb2,
-            color: const Color(0xFFA855F7),
+            color: AppColors.orb2,
             size: 10,
-            baseOffset: const Offset(60, 0),
+            baseOffset: const Offset(58, 0),
           ),
           _OrbWidget(
             controller: orb3,
-            color: const Color(0xFF38BDF8),
+            color: AppColors.orb3,
             size: 12,
-            baseOffset: const Offset(-52, 36),
+            baseOffset: const Offset(-50, 34),
           ),
           _OrbWidget(
             controller: orb4,
-            color: const Color(0xFFE879F9),
+            color: AppColors.orb4,
             size: 8,
-            baseOffset: const Offset(40, 44),
+            baseOffset: const Offset(38, 42),
           ),
         ],
       ),
@@ -580,6 +723,174 @@ class _OrbWidget extends StatelessWidget {
   }
 }
 
+// ─── Leaf Decorations ─────────────────────────────────────────────────────────
+
+class _LeafDecorations extends StatefulWidget {
+  const _LeafDecorations();
+  @override
+  State<_LeafDecorations> createState() => _LeafDecorationsState();
+}
+
+class _LeafDecorationsState extends State<_LeafDecorations>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<double> _sway;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 4000),
+    )..repeat(reverse: true);
+    _sway = Tween<double>(
+      begin: -0.14,
+      end: 0.14,
+    ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final sz = MediaQuery.of(context).size;
+    return AnimatedBuilder(
+      animation: _sway,
+      builder: (_, __) => Stack(
+        children: [
+          Positioned(
+            top: sz.height * 0.08,
+            right: sz.width * 0.06,
+            child: Transform.rotate(
+              angle: _sway.value,
+              alignment: Alignment.bottomCenter,
+              child: Opacity(opacity: 0.09, child: _LeafShape(size: 80)),
+            ),
+          ),
+          Positioned(
+            bottom: sz.height * 0.12,
+            left: sz.width * 0.05,
+            child: Transform.rotate(
+              angle: -_sway.value * 1.3,
+              alignment: Alignment.bottomCenter,
+              child: Opacity(opacity: 0.07, child: _LeafShape(size: 56)),
+            ),
+          ),
+          Positioned(
+            top: sz.height * 0.52,
+            right: sz.width * 0.03,
+            child: Transform.rotate(
+              angle: 0.5 + _sway.value,
+              alignment: Alignment.bottomCenter,
+              child: Opacity(opacity: 0.06, child: _LeafShape(size: 44)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LeafShape extends StatelessWidget {
+  final double size;
+  const _LeafShape({required this.size});
+  @override
+  Widget build(BuildContext context) =>
+      CustomPaint(size: Size(size, size * 1.25), painter: _LeafPainter());
+}
+
+class _LeafPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final fill = Paint()
+      ..color = AppColors.leaf
+      ..style = PaintingStyle.fill;
+    final cx = size.width / 2;
+    final path = Path()
+      ..moveTo(cx, size.height)
+      ..cubicTo(0, size.height * 0.65, 0, size.height * 0.15, cx, 0)
+      ..cubicTo(
+        size.width,
+        size.height * 0.15,
+        size.width,
+        size.height * 0.65,
+        cx,
+        size.height,
+      );
+    canvas.drawPath(path, fill);
+    canvas.drawLine(
+      Offset(cx, size.height),
+      Offset(cx, 0),
+      Paint()
+        ..color = AppColors.coreGradStart
+        ..strokeWidth = 1.2
+        ..style = PaintingStyle.stroke,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter old) => false;
+}
+
+// ─── Pulsing Dots ─────────────────────────────────────────────────────────────
+
+class _PulsingDots extends StatefulWidget {
+  @override
+  State<_PulsingDots> createState() => _PulsingDotsState();
+}
+
+class _PulsingDotsState extends State<_PulsingDots>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(3, (i) {
+        return AnimatedBuilder(
+          animation: _ctrl,
+          builder: (_, __) {
+            final phase = (_ctrl.value - i * 0.33).clamp(0.0, 1.0);
+            final opacity = (phase < 0.5 ? phase * 2 : (1 - phase) * 2).clamp(
+              0.2,
+              1.0,
+            );
+            return Container(
+              margin: const EdgeInsets.symmetric(horizontal: 3),
+              width: 5,
+              height: 5,
+              decoration: BoxDecoration(
+                color: AppColors.dotActive.withOpacity(opacity),
+                shape: BoxShape.circle,
+              ),
+            );
+          },
+        );
+      }),
+    );
+  }
+}
+
 // ─── Loading Bar ──────────────────────────────────────────────────────────────
 
 class _LoadingBar extends StatelessWidget {
@@ -595,10 +906,7 @@ class _LoadingBar extends StatelessWidget {
         borderRadius: BorderRadius.circular(4),
         child: Stack(
           children: [
-            // Track
-            Container(color: const Color(0xFF1A2240)),
-
-            // Fill
+            Container(color: AppColors.backgroundCard),
             AnimatedBuilder(
               animation: loadAnim,
               builder: (_, __) => FractionallySizedBox(
@@ -607,9 +915,9 @@ class _LoadingBar extends StatelessWidget {
                   decoration: const BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        Color(0xFF4F46E5),
-                        Color(0xFFA855F7),
-                        Color(0xFF06B6D4),
+                        AppColors.coreGradStart,
+                        AppColors.coreGradMid,
+                        AppColors.orb2,
                       ],
                     ),
                   ),
@@ -622,3 +930,36 @@ class _LoadingBar extends StatelessWidget {
     );
   }
 }
+
+// ─── Placeholder screens (replace with your real screens) ────────────────────
+
+class HomeScreen extends StatelessWidget {
+  const HomeScreen({super.key});
+  @override
+  Widget build(BuildContext context) =>
+      const Scaffold(body: Center(child: Text('Home Screen')));
+}
+
+class LoginScreen extends StatelessWidget {
+  const LoginScreen({super.key});
+  @override
+  Widget build(BuildContext context) =>
+      const Scaffold(body: Center(child: Text('Login Screen')));
+}
+
+// ─── How to save UID on login (call this from your login flow) ────────────────
+//
+// import 'package:shared_preferences/shared_preferences.dart';
+// import 'package:firebase_database/firebase_database.dart';
+//
+// Future<void> onLoginSuccess(String uid) async {
+//   final prefs = await SharedPreferences.getInstance();
+//   await prefs.setString('uid', uid);
+//   await OnlinePresenceService.goOnline(uid);
+// }
+//
+// Future<void> onLogout(String uid) async {
+//   await OnlinePresenceService.goOffline(uid);
+//   final prefs = await SharedPreferences.getInstance();
+//   await prefs.remove('uid');
+// }

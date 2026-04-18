@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:voxa/feature/auth/presentation/blocs/buttonAnm_bloc/button_bloc.dart';
 import 'package:voxa/feature/auth/presentation/blocs/buttonAnm_bloc/button_event.dart';
 import 'package:voxa/feature/auth/presentation/blocs/buttonAnm_bloc/button_state.dart';
@@ -10,6 +11,8 @@ import 'package:voxa/feature/auth/presentation/cubits/premuim_button_cubit/premi
 import 'package:voxa/feature/auth/presentation/cubits/premuim_button_cubit/premium_button_state.dart';
 import 'package:voxa/feature/auth/data/services/auth_service.dart';
 import 'package:voxa/feature/auth/presentation/screens/hello_screen.dart';
+import 'package:voxa/feature/splash_screen/presantation/screen/splash_screen.dart';
+import 'package:voxa/screens/main_screen.dart';
 
 class PremiumAnimatedButton extends StatelessWidget {
   final int index;
@@ -67,6 +70,12 @@ class PremiumAnimatedButton extends StatelessWidget {
     //     context,
     //   ).showSnackBar(SnackBar(content: Text(message)));
     // }
+
+    Future<void> onLoginSuccess(String uid) async {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('uid', uid);
+      await OnlinePresenceService.goOnline(uid);
+    }
 
     void _showSnack(BuildContext context, String message) {
       ScaffoldMessenger.of(
@@ -136,7 +145,10 @@ class PremiumAnimatedButton extends StatelessWidget {
               if (selectedButton == AuthButton.login) {
                 debugPrint("inside Login action");
 
-                if (!_validateLogin(context)) return;
+                if (!_validateLogin(context)) {
+                  cubit.stopLoading();
+                  return;
+                }
 
                 final email = emailController.text.trim();
                 final password = passwordController.text.trim();
@@ -178,14 +190,19 @@ class PremiumAnimatedButton extends StatelessWidget {
                       print("🔥 Keywords generated for old user");
                     }
                   }
+
+                  onLoginSuccess(user.uid);
+                  print("saved uid ${user.uid}");
                 }
 
                 _showSnack(context, "Login success! UID: ${user?.uid}");
               } else if (selectedButton == AuthButton.signup) {
                 debugPrint("inside Signup action");
 
-                if (!_validateLogin(context) || !_validateSignup(context))
+                if (!_validateLogin(context) || !_validateSignup(context)) {
+                  cubit.stopLoading();
                   return;
+                }
 
                 final email = emailController.text.trim();
                 final password = passwordController.text.trim();
@@ -205,6 +222,9 @@ class PremiumAnimatedButton extends StatelessWidget {
                   Future.delayed(const Duration(seconds: 2), () {
                     _authService.saveOneSignalId();
                   });
+                  if (user != null) {
+                    await onLoginSuccess(user.uid);
+                  }
                   final keywords = [
                     ...generateKeywords(name),
                     ...generateKeywords(email),
