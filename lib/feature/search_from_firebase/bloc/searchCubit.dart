@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:voxa/feature/auth/data/model/user_model.dart';
-import 'package:voxa/feature/search_from_firebase/bloc/searchState.dart';
+import 'package:synapse/feature/auth/data/model/user_model.dart';
+import 'package:synapse/feature/search_from_firebase/bloc/searchState.dart';
 
 class SearchCubit extends Cubit<SearchState> {
   SearchCubit() : super(SearchInitial());

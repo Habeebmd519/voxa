@@ -3,9 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
-import 'package:voxa/core/maintaince/maintaince.dart';
-import 'package:voxa/screens/main_screen.dart';
-import 'package:voxa/feature/auth/presentation/screens/screen_login.dart';
+import 'package:synapse/core/maintaince/maintaince.dart';
+import 'package:synapse/screens/main_screen.dart';
+import 'package:synapse/feature/auth/presentation/screens/screen_login.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 
 // ─── App Color Palette (Green Theme) ─────────────────────────────────────────
 class AppColors {
@@ -118,10 +119,31 @@ class _SynapseSplashScreenState extends State<SynapseSplashScreen>
   late AnimationController _glowController;
   late Animation<double> _glowAnim;
   late bool isReady;
+
+  Future<bool> hasInternet() async {
+    final result = await Connectivity().checkConnectivity();
+    return result != ConnectivityResult.none;
+  }
+
+  void checkInternet() async {
+    final isOnline = await hasInternet();
+
+    if (!isOnline && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text("No Internet Connection"),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
   @override
   void initState() {
     super.initState();
-
+    checkInternet();
     _floatController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 3500),

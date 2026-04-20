@@ -1,8 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:voxa/feature/Drop/pressantation/bloc/friendCubit/freindState.dart';
-import 'package:voxa/feature/user/bloc/current_user_cubit.dart';
+import 'package:synapse/feature/Drop/pressantation/bloc/friendCubit/freindState.dart';
+import 'package:synapse/feature/user/bloc/current_user_cubit.dart';
 
 class FriendCubit extends Cubit<FriendState> {
   FriendCubit() : super(FriendInitial());

@@ -1,10 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:voxa/core/hive/pressentation/models/user_hive_model.dart';
-import 'package:voxa/core/network/notfication_helper/notfication_helper.dart';
-import 'package:voxa/feature/auth/data/model/user_model.dart';
-import 'package:voxa/feature/chat/Repositories/chat_repository/chat_repository.dart';
+import 'package:synapse/core/hive/pressentation/models/user_hive_model.dart';
+import 'package:synapse/core/network/notfication_helper/notfication_helper.dart';
+import 'package:synapse/feature/auth/data/model/user_model.dart';
+import 'package:synapse/feature/chat/Repositories/chat_repository/chat_repository.dart';
 import 'chat_state.dart';
 
 class ChatCubitt extends Cubit<ChatState> {

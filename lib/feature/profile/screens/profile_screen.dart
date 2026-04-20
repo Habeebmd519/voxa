@@ -5,14 +5,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:voxa/core/hive/pressentation/models/user_hive_model.dart';
-import 'package:voxa/core/shimmer_loading/shimmer_loading.dart';
-import 'package:voxa/feature/auth/data/model/user_model.dart';
-import 'package:voxa/feature/auth/data/services/auth_service.dart';
-import 'package:voxa/feature/auth/presentation/screens/screen_login.dart';
-import 'package:voxa/feature/profile/screens/cubit/edit_cubit.dart';
-import 'package:voxa/feature/task/profile_cubit/prifile_state.dart';
-import 'package:voxa/feature/task/profile_cubit/profile_cubit.dart';
+import 'package:synapse/core/hive/pressentation/models/user_hive_model.dart';
+import 'package:synapse/core/shimmer_loading/shimmer_loading.dart';
+import 'package:synapse/feature/auth/data/model/user_model.dart';
+import 'package:synapse/feature/auth/data/services/auth_service.dart';
+import 'package:synapse/feature/auth/presentation/screens/screen_login.dart';
+import 'package:synapse/feature/profile/screens/cubit/edit_cubit.dart';
+import 'package:synapse/feature/task/profile_cubit/prifile_state.dart';
+import 'package:synapse/feature/task/profile_cubit/profile_cubit.dart';
 
 class ProfileScreen extends StatefulWidget {
   final state;

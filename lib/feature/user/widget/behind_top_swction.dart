@@ -1,11 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:voxa/core/buildFriendButton/friendButton.dart';
-import 'package:voxa/feature/Drop/pressantation/bloc/friendCubit/freindCubit.dart';
-import 'package:voxa/feature/auth/data/model/user_model.dart';
-import 'package:voxa/feature/user/bloc/current_user_cubit.dart';
-// import 'package:voxa/testing/followButtin.dart';
+import 'package:synapse/core/buildFriendButton/friendButton.dart';
+import 'package:synapse/feature/Drop/pressantation/bloc/friendCubit/freindCubit.dart';
+import 'package:synapse/feature/auth/data/model/user_model.dart';
+import 'package:synapse/feature/user/bloc/current_user_cubit.dart';
+// import 'package:synapse/testing/followButtin.dart';
 
 class buildProfieAvatr extends StatefulWidget {
   UserModel user;

@@ -3,16 +3,16 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:voxa/feature/auth/presentation/blocs/buttonAnm_bloc/button_bloc.dart';
-import 'package:voxa/feature/auth/presentation/blocs/buttonAnm_bloc/button_event.dart';
-import 'package:voxa/feature/auth/presentation/blocs/buttonAnm_bloc/button_state.dart';
-import 'package:voxa/feature/auth/presentation/blocs/checkBoxBoc/check_bloc.dart';
-import 'package:voxa/feature/auth/presentation/cubits/premuim_button_cubit/premium_button_cubit.dart';
-import 'package:voxa/feature/auth/presentation/cubits/premuim_button_cubit/premium_button_state.dart';
-import 'package:voxa/feature/auth/data/services/auth_service.dart';
-import 'package:voxa/feature/auth/presentation/screens/hello_screen.dart';
-import 'package:voxa/feature/splash_screen/presantation/screen/splash_screen.dart';
-import 'package:voxa/screens/main_screen.dart';
+import 'package:synapse/feature/auth/presentation/blocs/buttonAnm_bloc/button_bloc.dart';
+import 'package:synapse/feature/auth/presentation/blocs/buttonAnm_bloc/button_event.dart';
+import 'package:synapse/feature/auth/presentation/blocs/buttonAnm_bloc/button_state.dart';
+import 'package:synapse/feature/auth/presentation/blocs/checkBoxBoc/check_bloc.dart';
+import 'package:synapse/feature/auth/presentation/cubits/premuim_button_cubit/premium_button_cubit.dart';
+import 'package:synapse/feature/auth/presentation/cubits/premuim_button_cubit/premium_button_state.dart';
+import 'package:synapse/feature/auth/data/services/auth_service.dart';
+import 'package:synapse/feature/auth/presentation/screens/hello_screen.dart';
+import 'package:synapse/feature/splash_screen/presantation/screen/splash_screen.dart';
+import 'package:synapse/screens/main_screen.dart';
 
 class PremiumAnimatedButton extends StatelessWidget {
   final int index;
@@ -223,7 +223,7 @@ class PremiumAnimatedButton extends StatelessWidget {
                     _authService.saveOneSignalId();
                   });
                   if (user != null) {
-                    await onLoginSuccess(user.uid);
+                    onLoginSuccess(user.uid);
                   }
                   final keywords = [
                     ...generateKeywords(name),

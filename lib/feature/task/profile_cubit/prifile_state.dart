@@ -1,4 +1,4 @@
-import 'package:voxa/feature/auth/data/model/user_model.dart';
+import 'package:synapse/feature/auth/data/model/user_model.dart';
 
 abstract class ProfileState {
   const ProfileState();

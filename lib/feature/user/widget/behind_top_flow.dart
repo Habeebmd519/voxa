@@ -1,9 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:voxa/feature/auth/data/model/user_model.dart';
-import 'package:voxa/feature/user/widget/behind_top_swction.dart';
+import 'package:synapse/feature/auth/data/model/user_model.dart';
+import 'package:synapse/feature/user/widget/behind_top_swction.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:voxa/feature/user/bloc/current_user_cubit.dart';
+import 'package:synapse/feature/user/bloc/current_user_cubit.dart';
 
 class BehindTopFlow extends StatelessWidget {
   UserModel user;

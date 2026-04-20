@@ -1,6 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:voxa/core/navigation/home_nav_controller.dart';
-import 'package:voxa/feature/task/top_toggle_system/enum.dart';
+import 'package:synapse/core/navigation/home_nav_controller.dart';
+import 'package:synapse/feature/task/top_toggle_system/enum.dart';
 
 class TopBarCubit extends Cubit<TopMode> {
   TopBarCubit() : super(TopMode.normal);

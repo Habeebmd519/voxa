@@ -1,5 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:voxa/feature/auth/presentation/cubits/premuim_button_cubit/premium_button_state.dart';
+import 'package:synapse/feature/auth/presentation/cubits/premuim_button_cubit/premium_button_state.dart';
 
 class PremiumButtonCubit extends Cubit<PremiumButtonState> {
   PremiumButtonCubit()

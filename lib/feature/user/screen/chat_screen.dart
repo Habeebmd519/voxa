@@ -7,14 +7,14 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
-import 'package:voxa/core/hive/pressentation/models/user_hive_model.dart';
-import 'package:voxa/feature/auth/data/model/user_model.dart';
-import 'package:voxa/feature/chat/chat_cubit/chat_cubit.dart';
-import 'package:voxa/feature/task/bottomSheet/cubit/sheet_cubit.dart';
-import 'package:voxa/feature/task/bottomSheet/cubit/sheet_state.dart';
-import 'package:voxa/feature/user/screen/chat_screen_shimmer_loading.dart';
-import 'package:voxa/feature/user/widget/quckle_dialog.dart';
-import 'package:voxa/feature/user/widget/show_premuim_dialog.dart';
+import 'package:synapse/core/hive/pressentation/models/user_hive_model.dart';
+import 'package:synapse/feature/auth/data/model/user_model.dart';
+import 'package:synapse/feature/chat/chat_cubit/chat_cubit.dart';
+import 'package:synapse/feature/task/bottomSheet/cubit/sheet_cubit.dart';
+import 'package:synapse/feature/task/bottomSheet/cubit/sheet_state.dart';
+import 'package:synapse/feature/user/screen/chat_screen_shimmer_loading.dart';
+import 'package:synapse/feature/user/widget/quckle_dialog.dart';
+import 'package:synapse/feature/user/widget/show_premuim_dialog.dart';
 
 import '../utils/chat_utils.dart';
 

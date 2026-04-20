@@ -1,4 +1,4 @@
-import 'package:voxa/feature/auth/data/services/auth_service.dart';
+import 'package:synapse/feature/auth/data/services/auth_service.dart';
 
 class AuthRepository {
   final AuthService service;

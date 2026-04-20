@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:voxa/feature/auth/presentation/blocs/buttonAnm_bloc/button_bloc.dart';
-import 'package:voxa/feature/auth/presentation/blocs/buttonAnm_bloc/button_event.dart';
-import 'package:voxa/feature/auth/presentation/blocs/buttonAnm_bloc/button_state.dart';
-import 'package:voxa/feature/auth/presentation/blocs/checkBoxBoc/check_bloc.dart';
-import 'package:voxa/feature/auth/presentation/blocs/checkBoxBoc/check_event.dart';
-import 'package:voxa/feature/auth/presentation/blocs/checkBoxBoc/check_state.dart';
-import 'package:voxa/feature/auth/presentation/widget/AnimatedNavButton.dart';
+import 'package:synapse/feature/auth/presentation/blocs/buttonAnm_bloc/button_bloc.dart';
+import 'package:synapse/feature/auth/presentation/blocs/buttonAnm_bloc/button_event.dart';
+import 'package:synapse/feature/auth/presentation/blocs/buttonAnm_bloc/button_state.dart';
+import 'package:synapse/feature/auth/presentation/blocs/checkBoxBoc/check_bloc.dart';
+import 'package:synapse/feature/auth/presentation/blocs/checkBoxBoc/check_event.dart';
+import 'package:synapse/feature/auth/presentation/blocs/checkBoxBoc/check_state.dart';
+import 'package:synapse/feature/auth/presentation/widget/AnimatedNavButton.dart';
 
 class AnimatedLoginScreen extends StatelessWidget {
   AnimatedLoginScreen({super.key});

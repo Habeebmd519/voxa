@@ -1,6 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:hive/hive.dart';
-import 'package:voxa/feature/auth/data/model/user_model.dart';
+import 'package:synapse/feature/auth/data/model/user_model.dart';
 
 part 'user_hive_model.g.dart';
 

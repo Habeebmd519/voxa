@@ -1,8 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:voxa/feature/Drop/pressantation/bloc/filterCubit.dart';
-import 'package:voxa/feature/Drop/pressantation/bloc/timeLineState.dart';
-import 'package:voxa/feature/Drop/pressantation/modes/dropModel.dart';
+import 'package:synapse/feature/Drop/pressantation/bloc/filterCubit.dart';
+import 'package:synapse/feature/Drop/pressantation/bloc/timeLineState.dart';
+import 'package:synapse/feature/Drop/pressantation/modes/dropModel.dart';
 
 class TimelineCubit extends Cubit<TimelineState> {
   TimelineCubit() : super(TimelineLoading());

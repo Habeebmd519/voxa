@@ -1,4 +1,4 @@
-import 'package:voxa/feature/Drop/pressantation/modes/dropModel.dart';
+import 'package:synapse/feature/Drop/pressantation/modes/dropModel.dart';
 
 abstract class TimelineState {}
 

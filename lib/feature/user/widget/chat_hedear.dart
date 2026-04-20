@@ -2,10 +2,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import 'package:voxa/feature/auth/data/model/user_model.dart';
-import 'package:voxa/feature/task/bottomSheet/cubit/sheet_cubit.dart';
-import 'package:voxa/feature/task/chatSheetManagemnt/chatSheetManage.dart';
-import 'package:voxa/feature/task/chatSheetManagemnt/chatSheetMangemetState.dart';
+import 'package:synapse/feature/auth/data/model/user_model.dart';
+import 'package:synapse/feature/task/bottomSheet/cubit/sheet_cubit.dart';
+import 'package:synapse/feature/task/chatSheetManagemnt/chatSheetManage.dart';
+import 'package:synapse/feature/task/chatSheetManagemnt/chatSheetMangemetState.dart';
 
 class ChatHeader extends StatelessWidget {
   final UserModel user;

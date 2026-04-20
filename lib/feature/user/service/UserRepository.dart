@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:voxa/feature/auth/data/model/user_model.dart';
+import 'package:synapse/feature/auth/data/model/user_model.dart';
 
 class UserRepository {
   final FirebaseFirestore firestore;

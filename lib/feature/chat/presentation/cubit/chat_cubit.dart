@@ -1,5 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-// import 'package:voxa/feature/chat/data/chat_repository.dart';
+// import 'package:synapse/feature/chat/data/chat_repository.dart';
 import 'chat_state.dart';
 
 class ChatCubit extends Cubit<ChatState> {

@@ -1,5 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:voxa/feature/auth/data/model/user_model.dart';
+import 'package:synapse/feature/auth/data/model/user_model.dart';
 import 'sheet_state.dart';
 
 class SheetCubit extends Cubit<SheetState> {

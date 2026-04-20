@@ -1,6 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:voxa/feature/auth/presentation/blocs/buttonAnm_bloc/button_event.dart';
-import 'package:voxa/feature/auth/presentation/blocs/buttonAnm_bloc/button_state.dart';
+import 'package:synapse/feature/auth/presentation/blocs/buttonAnm_bloc/button_event.dart';
+import 'package:synapse/feature/auth/presentation/blocs/buttonAnm_bloc/button_state.dart';
 
 class ButtonBloc extends Bloc<ButtonEvent, ButtonState> {
   ButtonBloc()

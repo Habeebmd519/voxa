@@ -1,5 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:voxa/core/network/webRTC/voice_call/voice_call_repository.dart';
+import 'package:synapse/core/network/webRTC/voice_call/voice_call_repository.dart';
 
 class CallCubit extends Cubit<String> {
   final VoiceCallRepository repo;

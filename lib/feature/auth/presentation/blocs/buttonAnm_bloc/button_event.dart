@@ -1,4 +1,4 @@
-import 'package:voxa/feature/auth/presentation/blocs/buttonAnm_bloc/button_state.dart';
+import 'package:synapse/feature/auth/presentation/blocs/buttonAnm_bloc/button_state.dart';
 
 abstract class ButtonEvent {}
 

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:voxa/feature/Drop/pressantation/bloc/friendCubit/freindCubit.dart';
+import 'package:synapse/feature/Drop/pressantation/bloc/friendCubit/freindCubit.dart';
 import 'dart:math' as math;
 
-import 'package:voxa/feature/auth/data/model/user_model.dart';
+import 'package:synapse/feature/auth/data/model/user_model.dart';
 
 class FollowButton extends StatefulWidget {
   final bool initialFollowing;

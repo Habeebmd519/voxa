@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:voxa/core/presence/online_status_cubit.dart';
+import 'package:synapse/core/presence/online_status_cubit.dart';
 
 class AppLifecycleHandler extends StatefulWidget {
   final Widget child;

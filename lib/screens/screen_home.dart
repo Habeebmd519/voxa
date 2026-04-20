@@ -7,44 +7,44 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive/hive.dart';
 import 'package:intl/number_symbols_data.dart';
 
-import 'package:voxa/core/navigation/home_nav_controller.dart';
+import 'package:synapse/core/navigation/home_nav_controller.dart';
 
 import 'package:hugeicons/hugeicons.dart';
-import 'package:voxa/core/network/webRTC/voice_call/voice_call_cubit.dart';
-import 'package:voxa/core/shimmer_loading/shimmer_loading.dart';
-import 'package:voxa/core/widgets/bottom_content.dart';
-import 'package:voxa/feature/Drop/pressantation/bloc/filterCubit.dart';
-import 'package:voxa/feature/Drop/pressantation/bloc/friendCubit/freindCubit.dart';
-import 'package:voxa/feature/Drop/pressantation/bloc/friendCubit/freindState.dart';
-import 'package:voxa/feature/Drop/pressantation/bloc/timeLineCubit.dart';
-import 'package:voxa/feature/Drop/pressantation/bloc/timeLineState.dart';
-import 'package:voxa/feature/Drop/pressantation/modes/dropModel.dart';
-import 'package:voxa/feature/Drop/servises/services.dart';
-import 'package:voxa/feature/auth/data/model/user_model.dart';
-import 'package:voxa/feature/profile/screens/profile_screen.dart';
-import 'package:voxa/feature/search_from_firebase/bloc/searchCubit.dart';
-import 'package:voxa/feature/search_from_firebase/bloc/searchState.dart';
+import 'package:synapse/core/network/webRTC/voice_call/voice_call_cubit.dart';
+import 'package:synapse/core/shimmer_loading/shimmer_loading.dart';
+import 'package:synapse/core/widgets/bottom_content.dart';
+import 'package:synapse/feature/Drop/pressantation/bloc/filterCubit.dart';
+import 'package:synapse/feature/Drop/pressantation/bloc/friendCubit/freindCubit.dart';
+import 'package:synapse/feature/Drop/pressantation/bloc/friendCubit/freindState.dart';
+import 'package:synapse/feature/Drop/pressantation/bloc/timeLineCubit.dart';
+import 'package:synapse/feature/Drop/pressantation/bloc/timeLineState.dart';
+import 'package:synapse/feature/Drop/pressantation/modes/dropModel.dart';
+import 'package:synapse/feature/Drop/servises/services.dart';
+import 'package:synapse/feature/auth/data/model/user_model.dart';
+import 'package:synapse/feature/profile/screens/profile_screen.dart';
+import 'package:synapse/feature/search_from_firebase/bloc/searchCubit.dart';
+import 'package:synapse/feature/search_from_firebase/bloc/searchState.dart';
 
-import 'package:voxa/feature/task/bottomSheet/cubit/sheet_cubit.dart';
-import 'package:voxa/feature/task/bottomSheet/cubit/sheet_state.dart';
-import 'package:voxa/feature/task/chatSheetManagemnt/chatSheetManage.dart';
-import 'package:voxa/feature/task/chatSheetManagemnt/chatSheetMangemetState.dart';
-import 'package:voxa/feature/task/profile_cubit/prifile_state.dart';
-import 'package:voxa/feature/task/profile_cubit/profile_cubit.dart';
+import 'package:synapse/feature/task/bottomSheet/cubit/sheet_cubit.dart';
+import 'package:synapse/feature/task/bottomSheet/cubit/sheet_state.dart';
+import 'package:synapse/feature/task/chatSheetManagemnt/chatSheetManage.dart';
+import 'package:synapse/feature/task/chatSheetManagemnt/chatSheetMangemetState.dart';
+import 'package:synapse/feature/task/profile_cubit/prifile_state.dart';
+import 'package:synapse/feature/task/profile_cubit/profile_cubit.dart';
 
-import 'package:voxa/feature/task/top_toggle_system/cubit/cubit.dart';
-import 'package:voxa/feature/task/top_toggle_system/enum.dart';
-import 'package:voxa/feature/user/bloc/UserCubit.dart';
-import 'package:voxa/feature/user/bloc/UserState.dart';
-import 'package:voxa/feature/user/bloc/current_user_cubit.dart';
-import 'package:voxa/feature/user/screen/chatHeaderFlow.dart';
-import 'package:voxa/feature/user/screen/chat_flow_screen.dart';
+import 'package:synapse/feature/task/top_toggle_system/cubit/cubit.dart';
+import 'package:synapse/feature/task/top_toggle_system/enum.dart';
+import 'package:synapse/feature/user/bloc/UserCubit.dart';
+import 'package:synapse/feature/user/bloc/UserState.dart';
+import 'package:synapse/feature/user/bloc/current_user_cubit.dart';
+import 'package:synapse/feature/user/screen/chatHeaderFlow.dart';
+import 'package:synapse/feature/user/screen/chat_flow_screen.dart';
 
-import 'package:voxa/feature/user/screen/chat_screen.dart';
-import 'package:voxa/feature/user/utils/behind_screen_flow.dart/behind_sccreen_flow.dart';
-import 'package:voxa/feature/user/widget/behind_top_flow.dart';
-import 'package:voxa/feature/user/widget/behind_top_swction.dart';
-import 'package:voxa/feature/user/widget/chat_hedear.dart';
+import 'package:synapse/feature/user/screen/chat_screen.dart';
+import 'package:synapse/feature/user/utils/behind_screen_flow.dart/behind_sccreen_flow.dart';
+import 'package:synapse/feature/user/widget/behind_top_flow.dart';
+import 'package:synapse/feature/user/widget/behind_top_swction.dart';
+import 'package:synapse/feature/user/widget/chat_hedear.dart';
 
 class ScreenHome extends StatelessWidget {
   const ScreenHome({super.key});

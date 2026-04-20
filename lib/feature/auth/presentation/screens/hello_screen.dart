@@ -1,9 +1,9 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
-import 'package:voxa/core/network/genarate_defualt_profile_photo/get_gravatar_url.dart';
-import 'package:voxa/screens/main_screen.dart';
-import 'package:voxa/feature/auth/presentation/screens/screen_login.dart';
+import 'package:synapse/core/network/genarate_defualt_profile_photo/get_gravatar_url.dart';
+import 'package:synapse/screens/main_screen.dart';
+import 'package:synapse/feature/auth/presentation/screens/screen_login.dart';
 
 class ExpandingScreenFromButton extends StatefulWidget {
   final Offset buttonOffset; // start button position

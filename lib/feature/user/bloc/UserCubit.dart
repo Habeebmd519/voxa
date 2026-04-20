@@ -1,7 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/adapters.dart';
-import 'package:voxa/core/hive/pressentation/models/user_hive_model.dart';
-import 'package:voxa/feature/user/bloc/UserState.dart';
+import 'package:synapse/core/hive/pressentation/models/user_hive_model.dart';
+import 'package:synapse/feature/user/bloc/UserState.dart';
 
 class UserCubit extends Cubit<UserState> {
   UserCubit() : super(UserLoading());

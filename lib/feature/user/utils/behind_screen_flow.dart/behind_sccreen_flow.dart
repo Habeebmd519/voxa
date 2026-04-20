@@ -1,12 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:voxa/feature/auth/data/model/user_model.dart';
-import 'package:voxa/feature/task/bottomSheet/cubit/sheet_state.dart';
-import 'package:voxa/feature/task/chatSheetManagemnt/chatSheetManage.dart';
-import 'package:voxa/feature/task/chatSheetManagemnt/chatSheetMangemetState.dart';
-import 'package:voxa/feature/user/screen/chat_behind_screen.dart';
-import 'package:voxa/feature/user/widget/bounce_arrow.dart';
+import 'package:synapse/feature/auth/data/model/user_model.dart';
+import 'package:synapse/feature/task/bottomSheet/cubit/sheet_state.dart';
+import 'package:synapse/feature/task/chatSheetManagemnt/chatSheetManage.dart';
+import 'package:synapse/feature/task/chatSheetManagemnt/chatSheetMangemetState.dart';
+import 'package:synapse/feature/user/screen/chat_behind_screen.dart';
+import 'package:synapse/feature/user/widget/bounce_arrow.dart';
 
 class BehindSccreenFlow extends StatelessWidget {
   UserModel user;

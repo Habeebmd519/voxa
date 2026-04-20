@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:voxa/feature/Drop/pressantation/modes/dropModel.dart';
+import 'package:synapse/feature/Drop/pressantation/modes/dropModel.dart';
 
 class DropSarvice {
   Future<void> toggleFriend(String targetUserId) async {
